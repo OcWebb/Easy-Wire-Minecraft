@@ -5,6 +5,8 @@ import java.util.List;
 
 import org.openjdk.nashorn.internal.runtime.regexp.joni.constants.EncloseType;
 
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.util.ITooltipFlag;
 import net.minecraft.entity.player.PlayerEntity;
@@ -25,6 +27,7 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 public class SpecialItem extends Item
 {
 	private ArrayList<BlockPos> machines = new ArrayList<BlockPos>();
+	private ArrayList<BlockPos> path = new ArrayList<BlockPos>();
 	public int distDown = 2;
 	
 	public SpecialItem(Properties properties) 
@@ -80,7 +83,7 @@ public class SpecialItem extends Item
 		if (!world.isClientSide)
 		{
 			// route between blocks
-			ArrayList<BlockPos> path = routeToBlock(machines.get(0), machines.get(1));
+			routeToBlock(world, machines.get(0), machines.get(1));
 			
 			for (BlockPos curBlock : path)
 			{
@@ -88,65 +91,89 @@ public class SpecialItem extends Item
 			}
 			
 			machines.clear();
+			path.clear();
 		}
 		
 		return ActionResultType.SUCCESS;
 	}
 	
 	
-	public ArrayList<BlockPos> routeToBlock(BlockPos startBlock, BlockPos destBlock)
+	public void routeToBlock(World world, BlockPos startBlock, BlockPos destBlock)
 	{
-		ArrayList<BlockPos> pathBetweenBlocks = new ArrayList<BlockPos>();
-		int distToDest = startBlock.distManhattan(destBlock);
 		BlockPos curBlock = startBlock;
 		
 		// remove distDown blocks below startBlock
 		for (int i = 1; i <= distDown; i++)
 		{	
 			curBlock = startBlock.below(i);
-			pathBetweenBlocks.add(curBlock);
+			path.add(curBlock);
 		}
 		
 		// add blocks along path
-		for (int i = 0; i < distToDest; i++)
+		int distToDest = startBlock.distManhattan(destBlock);
+		int iterations = 0;
+		while (distToDest > 1 && iterations < 400)
 		{
-			ArrayList<BlockPos> nextBlocks = getNextBlock(curBlock, destBlock.below(distDown));
+			ArrayList<BlockPos> nextBlocks = getNextBlock(world, curBlock, destBlock.below(distDown));
+
+			while (nextBlocks.size() == 0 && path.size() > 1)
+			{
+				int size = path.size();
+				path.remove(size-1);
+				nextBlocks = getNextBlock(world, path.get(size-2), destBlock.below(distDown));
+			}
 			
 			if (nextBlocks.size() == 0) { break; };
 			
-			pathBetweenBlocks.addAll(nextBlocks);
+			path.addAll(nextBlocks);
 			curBlock = nextBlocks.get(0);
+			iterations++;
+			distToDest = curBlock.distManhattan(destBlock.below(distDown));
+			
 		}
 		
 		// remove distDown blocks below destBlock
 		for (int i = 1; i <= distDown; i++)
 		{	
-			pathBetweenBlocks.add(destBlock.below(i));
+			path.add(destBlock.below(i));
 		}
-		
-		return pathBetweenBlocks;
 	}
 	
 	
-	public ArrayList<BlockPos> getNextBlock(BlockPos block, BlockPos dest)
+	public ArrayList<BlockPos> getNextBlock(World world, BlockPos block, BlockPos dest)
 	{
 		ArrayList<BlockPos> blocksToAdd = new ArrayList<BlockPos>();
-		int lowestDistance = 999999999;
+		double highestScore = -999999999.0;
 		
-		for (int xoff = -1; xoff <= 1; xoff++)
+		for (int zoff = -1; zoff <= 1; zoff++)
 		{
-			for (int zoff = -1; zoff <= 1; zoff++)
+			for (int xoff = -1; xoff <= 1; xoff++)
 			{
 				BlockPos curBlock = block.offset(xoff, 0, zoff);
-				int curDist = curBlock.distManhattan(dest);
+				BlockState state = world.getBlockState(curBlock);
+				Block blockObj = state.getBlock();
+				BlockPos aboveBlock = block.offset(xoff, 1, zoff);
+				BlockState aboveState = world.getBlockState(aboveBlock);
+				Block aboveBlockObj = aboveState.getBlock();
+				
+				
+				
 				boolean isDiagnal = (Math.abs(zoff) == 1 && Math.abs(xoff) == 1);
+				double curScore = calculateScore(curBlock, dest, isDiagnal);
+				boolean curBlockIsAir = blockObj.isAir(state, world, curBlock);
+				boolean curBlockIsOnSurface = aboveBlockObj.isAir(state, world, aboveBlock);
 				
-				//System.out.println("x:"+xoff+" z:"+zoff+" score:"+curDist);
-				
-				//								prioritize diagnals because they look better
-				if ((curDist < lowestDistance) || (curDist == lowestDistance && isDiagnal) )
+				if (machines.contains(curBlock) ||
+					curBlockIsAir ||
+					curBlockIsOnSurface)
 				{
-					lowestDistance = curDist;
+					continue;
+				}
+				
+				if (curScore > highestScore)
+				{
+					
+					highestScore = curScore;
 					blocksToAdd.clear();
 					blocksToAdd.add(curBlock);
 					
@@ -159,7 +186,43 @@ public class SpecialItem extends Item
 			}
 		}
 		
+		// check the block above and below the starting block aswell
+		BlockPos aboveBlock = block.above();
+		double aboveScore = calculateScore(aboveBlock, dest, false);
+		
+		if ((aboveScore >= highestScore))
+		{
+			highestScore = aboveScore;
+			blocksToAdd.clear();
+			blocksToAdd.add(aboveBlock);
+		}
+		
+		BlockPos belowBlock = block.below();
+		double belowScore = calculateScore(belowBlock, dest, false);
+		if (belowScore >= highestScore)
+		{
+			highestScore = belowScore;
+			blocksToAdd.clear();
+			blocksToAdd.add(belowBlock);
+		}
+		
 		return blocksToAdd;
+	}
+	
+	public double calculateScore (BlockPos block, BlockPos dest, boolean isDiagnal)
+	{
+		
+		double distToDest = block.distManhattan(dest);
+		double distToTargetMachine = block.distManhattan(machines.get(1));
+		
+		double score = -distToDest + (distToTargetMachine/4);
+		
+		if (isDiagnal)
+		{
+			score = score + 0.5;
+		}
+		
+		return score;
 	}
 	
 }
