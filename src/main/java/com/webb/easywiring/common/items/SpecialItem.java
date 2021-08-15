@@ -118,6 +118,7 @@ public class SpecialItem extends Item
 
 			while (nextBlocks.size() == 0 && path.size() > 1)
 			{
+				System.out.println("Backtrack");
 				int size = path.size();
 				path.remove(size-1);
 				nextBlocks = getNextBlock(world, path.get(size-2), destBlock.below(distDown));
@@ -150,22 +151,10 @@ public class SpecialItem extends Item
 			for (int xoff = -1; xoff <= 1; xoff++)
 			{
 				BlockPos curBlock = block.offset(xoff, 0, zoff);
-				BlockState state = world.getBlockState(curBlock);
-				Block blockObj = state.getBlock();
-				BlockPos aboveBlock = block.offset(xoff, 1, zoff);
-				BlockState aboveState = world.getBlockState(aboveBlock);
-				Block aboveBlockObj = aboveState.getBlock();
-				
-				
-				
 				boolean isDiagnal = (Math.abs(zoff) == 1 && Math.abs(xoff) == 1);
-				double curScore = calculateScore(curBlock, dest, isDiagnal);
-				boolean curBlockIsAir = blockObj.isAir(state, world, curBlock);
-				boolean curBlockIsOnSurface = aboveBlockObj.isAir(state, world, aboveBlock);
+				double curScore = calculateScore(world, curBlock, dest, isDiagnal);
 				
-				if (machines.contains(curBlock) ||
-					curBlockIsAir ||
-					curBlockIsOnSurface)
+				if (machines.contains(curBlock))
 				{
 					continue;
 				}
@@ -188,17 +177,18 @@ public class SpecialItem extends Item
 		
 		// check the block above and below the starting block aswell
 		BlockPos aboveBlock = block.above();
-		double aboveScore = calculateScore(aboveBlock, dest, false);
+		double aboveBlockScore = calculateScore(world, aboveBlock, dest, false);
 		
-		if ((aboveScore >= highestScore))
+		if (aboveBlockScore >= highestScore)
 		{
-			highestScore = aboveScore;
+			highestScore = aboveBlockScore;
 			blocksToAdd.clear();
 			blocksToAdd.add(aboveBlock);
 		}
 		
 		BlockPos belowBlock = block.below();
-		double belowScore = calculateScore(belowBlock, dest, false);
+		double belowScore = calculateScore(world, belowBlock, dest, false);
+		
 		if (belowScore >= highestScore)
 		{
 			highestScore = belowScore;
@@ -209,13 +199,28 @@ public class SpecialItem extends Item
 		return blocksToAdd;
 	}
 	
-	public double calculateScore (BlockPos block, BlockPos dest, boolean isDiagnal)
+	public double calculateScore (World world, BlockPos block, BlockPos dest, boolean isDiagnal)
 	{
 		
 		double distToDest = block.distManhattan(dest);
 		double distToTargetMachine = block.distManhattan(machines.get(1));
 		
+		BlockState curBlockState = world.getBlockState(block);
+		Block curBlockObj = curBlockState.getBlock();
+		
+		BlockPos aboveBlock = block.offset(0, 1, 0);
+		BlockState aboveState = world.getBlockState(aboveBlock);
+		Block aboveBlockObj = aboveState.getBlock();
+		
+		boolean curBlockIsAir = curBlockObj.isAir(curBlockState, world, block);
+		boolean curBlockIsOnSurface = aboveBlockObj.isAir(aboveState, world, aboveBlock);
+		
 		double score = -distToDest + (distToTargetMachine/4);
+		
+		if (curBlockIsAir || curBlockIsOnSurface)
+		{
+			score = score + 8;
+		}
 		
 		if (isDiagnal)
 		{
