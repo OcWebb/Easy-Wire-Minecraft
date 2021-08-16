@@ -1,9 +1,13 @@
 package com.webb.easywiring.common.items;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 
 import org.openjdk.nashorn.internal.runtime.regexp.joni.constants.EncloseType;
+
+import com.webb.easywiring.common.util.Node;
 
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -109,20 +113,25 @@ public class SpecialItem extends Item
 			path.add(curBlock);
 		}
 		
+		// remove distDown blocks below destBlock
+		for (int i = 1; i <= distDown; i++)
+		{	
+			path.add(destBlock.below(i));
+		}
+		
+		
 		// add blocks along path
 		int distToDest = startBlock.distManhattan(destBlock);
 		int iterations = 0;
-		while (distToDest > 1 && iterations < 400)
+		
+		ArrayList<Node> openList = new ArrayList<Node>();
+		ArrayList<Node> closedList = new ArrayList<Node>();
+		openList.add(new Node(startBlock, calculateScore(world, startBlock, destBlock, false)));
+		
+		while (openList.size() <= 0 || iterations < 500)
 		{
 			ArrayList<BlockPos> nextBlocks = getNextBlock(world, curBlock, destBlock.below(distDown));
-
-			while (nextBlocks.size() == 0 && path.size() > 1)
-			{
-				System.out.println("Backtrack");
-				int size = path.size();
-				path.remove(size-1);
-				nextBlocks = getNextBlock(world, path.get(size-2), destBlock.below(distDown));
-			}
+			Collections.sort(openList);
 			
 			if (nextBlocks.size() == 0) { break; };
 			
@@ -130,13 +139,6 @@ public class SpecialItem extends Item
 			curBlock = nextBlocks.get(0);
 			iterations++;
 			distToDest = curBlock.distManhattan(destBlock.below(distDown));
-			
-		}
-		
-		// remove distDown blocks below destBlock
-		for (int i = 1; i <= distDown; i++)
-		{	
-			path.add(destBlock.below(i));
 		}
 	}
 	
