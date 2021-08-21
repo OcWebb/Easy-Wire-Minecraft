@@ -6,6 +6,7 @@ import java.util.List;
 import org.openjdk.nashorn.internal.runtime.regexp.joni.constants.EncloseType;
 
 import net.minecraft.block.Blocks;
+import net.minecraft.client.renderer.WorldRenderer;
 import net.minecraft.client.util.ITooltipFlag;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
@@ -22,12 +23,12 @@ import net.minecraft.world.World;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 
-public class SpecialItem extends Item
+public class PipePlacerItem extends Item
 {
 	private ArrayList<BlockPos> machines = new ArrayList<BlockPos>();
 	public int distDown = 2;
 	
-	public SpecialItem(Properties properties) 
+	public PipePlacerItem(Properties properties) 
 	{
 		super(properties);
 	}
@@ -58,7 +59,6 @@ public class SpecialItem extends Item
 		World world = ItemContext.getLevel();
 		BlockPos blockPos = ItemContext.getClickedPos();
 		
-		
 		if (world.isClientSide)
 		{
 			if (machines.size() >= 2)
@@ -70,7 +70,7 @@ public class SpecialItem extends Item
 			{
 				machines.add(blockPos);
 			}
-		};
+		}
 		
 		if (machines.size() < 2)
 		{
@@ -161,5 +161,7 @@ public class SpecialItem extends Item
 		
 		return blocksToAdd;
 	}
+	
+	
 	
 }
