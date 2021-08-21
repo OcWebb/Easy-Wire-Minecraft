@@ -23,12 +23,12 @@ import net.minecraft.world.World;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 
-public class SpecialItem extends Item
+public class PipePlacerItem extends Item
 {
 	private ArrayList<BlockPos> machines = new ArrayList<BlockPos>();
 	public int distDown = 2;
 	
-	public SpecialItem(Properties properties) 
+	public PipePlacerItem(Properties properties) 
 	{
 		super(properties);
 	}
