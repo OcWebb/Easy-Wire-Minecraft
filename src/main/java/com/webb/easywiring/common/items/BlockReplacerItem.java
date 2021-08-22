@@ -21,6 +21,9 @@ import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.world.World;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraftforge.fml.DistExecutor;
+
+import com.webb.easywiring.client.render.EventBusSubscriberClient;
 
 public class BlockReplacerItem extends Item
 {
@@ -45,10 +48,7 @@ public class BlockReplacerItem extends Item
 	@Override
 	public ActionResult<ItemStack> use(World world, PlayerEntity player, Hand hand) {
 		
-		if (player.isCrouching())
-		{
-			
-		}
+		DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> EventBusSubscriberClient::openCustomScreen);
 		return super.use(world, player, hand);
 	}
 	
@@ -85,7 +85,7 @@ public class BlockReplacerItem extends Item
 		
 		if (!world.isClientSide)
 		{
-			System.out.println("closedList: " + closedList.size());
+			System.out.println("blocks removed: " + closedList.size());
 			for (BlockPos curBlock : closedList)
 			{
 				world.removeBlock(curBlock, false);
