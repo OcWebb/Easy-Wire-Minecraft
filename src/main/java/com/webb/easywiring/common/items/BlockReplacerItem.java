@@ -27,9 +27,11 @@ import com.webb.easywiring.client.render.EventBusSubscriberClient;
 
 public class BlockReplacerItem extends Item
 {
-	public int maxBlocks = 30;
+	public int maxBlocks = 50;
+	public int batchSize = 5;
 	public Queue<BlockPos> openList = new LinkedList<BlockPos>();
 	public Queue<BlockPos> closedList = new LinkedList<BlockPos>();
+	public Queue<BlockPos> processedList = new LinkedList<BlockPos>();
 	
 	public BlockReplacerItem(Properties properties) 
 	{
