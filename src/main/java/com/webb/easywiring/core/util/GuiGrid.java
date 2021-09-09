@@ -12,6 +12,7 @@ import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.WorldVertexBufferUploader;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.util.math.vector.Matrix4f;
+import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.util.text.TextFormatting;
 
@@ -70,20 +71,40 @@ public class GuiGrid
 	public void render (MatrixStack matrixStack, FontRenderer font)
 	{
 		drawBackground(matrixStack);
+		drawCoords(matrixStack);
 		drawGridLines(matrixStack);
+		drawCornerAccents(matrixStack);
 	}
 	
+	public void drawCoords (MatrixStack matrixStack)
+	{
+		for (int c = 1; c <= this.numColumns; c++)
+    	{
+        	for (int r = 1; r <= this.numRows; r++)
+    		{
+    			
+    			if ((r+c) % 2 == 0)
+    			{
+    				this.fillCell(matrixStack, r, c, 0xff_00bfff);
+    			}
+    		}
+    	}
+	}
 	
 	public void drawString (MatrixStack matrixStack, FontRenderer font, String text, int row, int column, float scale)
 	{
-		float centeredX = (getX(row) + getWidth()/2) / scale;
-		float centeredY = (getY(column)+ getHeight()/2) / scale;
+		float centeredX = (this.getX(row) + this.getWidth()/2);
+		float centeredY = (this.getY(column) + this.getHeight()/2) - font.lineHeight/2;
 		
-		GL11.glPushMatrix(); //Start new matrix
-		GL11.glScalef(scale, scale, 0);
-		GL11.glTranslatef(centeredX, centeredY - font.lineHeight/2, 0);
-		Screen.drawCenteredString(matrixStack, font, new StringTextComponent(text), 0, 0, TextFormatting.WHITE.getColor());
-		GL11.glPopMatrix();
+		Screen.drawCenteredString(matrixStack, font, new StringTextComponent(text), (int) centeredX, (int) centeredY, TextFormatting.WHITE.getColor());
+	}
+	
+	public void drawString (MatrixStack matrixStack, FontRenderer font, ITextComponent text, int row, int column, float scale)
+	{
+		float centeredX = (this.getX(row) + this.getWidth()/2);
+		float centeredY = (this.getY(column) + this.getHeight()/2) - font.lineHeight/2;
+		
+		Screen.drawCenteredString(matrixStack, font, text, (int) centeredX, (int) centeredY, TextFormatting.WHITE.getColor());
 	}
 	
 	public void fillCell (MatrixStack matrixStack, int row, int column, int color)
@@ -102,10 +123,10 @@ public class GuiGrid
 	{
 		int lineThickness = 2;
 		int offset = lineThickness/2;
-		int gridStartX = x1 + edgeOffsetX;
-		int gridStartY = y1 + edgeOffsetY;
-		int gridEndX = x2 - edgeOffsetX;
-		int gridEndY = y2 - edgeOffsetY;
+		int gridStartX = this.x1 + this.edgeOffsetX;
+		int gridStartY = this.y1 + this.edgeOffsetY;
+		int gridEndX = this.x2 - this.edgeOffsetX;
+		int gridEndY = this.y2 - this.edgeOffsetY;
 		
 		for (int r = 1; r < numRows+2; r++)
 		{
@@ -126,7 +147,20 @@ public class GuiGrid
 					gridEndY, 
 					primaryColor);
 		}
-		
+	}
+	
+	
+	public void drawBackground(MatrixStack matrixStack)
+    {
+        Screen.fill(matrixStack, this.getX(1), this.getY(1), this.getX(this.numColumns+1), this.getY(this.numRows+1), 0xff_353535);
+    }
+	
+	public void drawCornerAccents (MatrixStack matrixStack)
+	{
+		int gridStartX = this.x1 + this.edgeOffsetX;
+		int gridStartY = this.y1 + this.edgeOffsetY;
+		int gridEndX = this.x2 - this.edgeOffsetX;
+		int gridEndY = this.y2 - this.edgeOffsetY;
 		// draw squares in corners
 		int squareSize = 6;
 		
@@ -197,14 +231,7 @@ public class GuiGrid
 				gridStartX + squareSize/2, 
 				gridEndY + squareSize/2, 
 				accentColor);
-		
 	}
-	
-	
-	public void drawBackground(MatrixStack matrixStack)
-    {
-        Screen.fill(matrixStack, this.getX(1), this.getY(1), this.getX(this.numColumns+1), this.getY(this.numRows+1), 0xff_353535);
-    }
 	
 	
 	public GridCell getCell(int row, int column)

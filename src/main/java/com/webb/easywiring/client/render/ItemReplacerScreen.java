@@ -57,51 +57,49 @@ public class ItemReplacerScreen extends Screen
         
         int canvasStartX = width / sizeFactor;
         int canvasStartY = height / sizeFactor;
-        grid = new GuiGrid(5, 3, canvasStartX, canvasStartY, width - canvasStartX, height - canvasStartY);
-        subGrid = new GuiGrid(grid.getCell(2, 2), 4, 4);
+        grid = new GuiGrid(4, 3, canvasStartX, canvasStartY, width - canvasStartX, height - canvasStartY);
+        //subGrid = new GuiGrid(grid.getCell(2, 2), 4, 4);
         
-        /*
-        subGrid = new GuiGrid(2, 2, grid.getX(2), grid.getY(2), grid.getX(2) + grid.getWidth(), grid.getY(2) + grid.getHeight(), 0);
-        
-        GridButton b1 = new GridButton(grid, 1, 2, new StringTextComponent("One"), 
-			        		(button) -> {
-			        			ClientPlayerEntity player = minecraft.player;
-			        			
-			        			if (player == null)
-			        				return;
-			        			
-			        			button.setMessage(new StringTextComponent("1"));
-			        		});
+        GridButton b1 = new GridButton(grid, 2, 2, new StringTextComponent("Click Me"), 
+        		(button) -> {
+        			ClientPlayerEntity player = minecraft.player;
+        			GridButton b = (GridButton) button;
+        			
+        			if (player == null)
+        				return;
+        			
+        			if (b.getColor() == 0xff_d300e2)
+        			{
+        				b.setColor(0xff_ff0000);
+        			} else {
+        				b.setColor(0xff_d300e2);
+        			}
+        		},
+        		0xff_ff0000,
+        		5);
         this.addButton(b1);
         
+        GridButton b2 = new GridButton(grid, 1, 1, new StringTextComponent("Button"), 
+        		(button) -> {
+        			ClientPlayerEntity player = minecraft.player;
+        			
+        			if (player == null)
+        				return;
+        		},
+        		0xff_d300e2,
+        		2);
+        this.addButton(b2);
+        
+        /*
         TextFieldWidget textWidget = new TextFieldWidget(font, 0, 0, 160, 20, new StringTextComponent("Numeric Input"));
         this.addWidget(textWidget);
         */
-        
     }
 
     @Override
     public void render(MatrixStack matrixStack, int mouseX, int mouseY, float partialTicks) 
     {
     	this.grid.render(matrixStack, this.font);
-    	this.subGrid.render(matrixStack, this.font);
-    	
-    	for (int r = 1; r <= grid.numRows; r++)
-    	{
-    		for (int c = 1; c <= grid.numColumns; c++)
-    		{
-    			
-    			if ((r+c) % 2 == 0)
-    			{
-    				grid.fillCell(matrixStack, r, c, 0xff_00bfff);
-    			}
-    			String coords = r + "-" + c;
-    			grid.drawString(matrixStack, font, coords, r, c, 0.3f);
-    		}
-    	}
-    	
-    	grid.drawGridLines(matrixStack);
-    	subGrid.drawGridLines(matrixStack);
     	
         super.render(matrixStack, mouseX, mouseY, partialTicks);
     }
