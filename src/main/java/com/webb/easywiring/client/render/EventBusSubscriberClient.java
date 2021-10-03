@@ -16,9 +16,9 @@ public class EventBusSubscriberClient
 		
 	}
 	
-	public static void openCustomScreen()
+	public static void openPipePlacerScreen()
 	{
-	    Minecraft.getInstance().setScreen(new ItemReplacerScreen());
+	    Minecraft.getInstance().setScreen(new PipePlacerScreen());
 	}
 	
 }

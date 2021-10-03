@@ -5,6 +5,8 @@ import java.util.List;
 
 import org.openjdk.nashorn.internal.runtime.regexp.joni.constants.EncloseType;
 
+import com.webb.easywiring.client.render.EventBusSubscriberClient;
+
 import net.minecraft.block.Blocks;
 import net.minecraft.client.renderer.WorldRenderer;
 import net.minecraft.client.util.ITooltipFlag;
@@ -22,6 +24,7 @@ import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.world.World;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraftforge.fml.DistExecutor;
 
 public class PipePlacerItem extends Item
 {
@@ -48,6 +51,8 @@ public class PipePlacerItem extends Item
 		{
 			machines.clear();
 			System.out.println("machines cleared");
+		} else {
+			DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> EventBusSubscriberClient::openPipePlacerScreen);
 		}
 		return super.use(world, player, hand);
 	}

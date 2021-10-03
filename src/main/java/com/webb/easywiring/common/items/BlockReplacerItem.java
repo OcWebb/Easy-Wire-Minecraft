@@ -48,9 +48,8 @@ public class BlockReplacerItem extends Item
 	}
 	
 	@Override
-	public ActionResult<ItemStack> use(World world, PlayerEntity player, Hand hand) {
-		
-		DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> EventBusSubscriberClient::openCustomScreen);
+	public ActionResult<ItemStack> use(World world, PlayerEntity player, Hand hand) 
+	{
 		return super.use(world, player, hand);
 	}
 	

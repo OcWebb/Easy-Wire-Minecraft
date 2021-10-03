@@ -28,17 +28,18 @@ import net.minecraftforge.fml.RegistryObject;
 import net.minecraft.client.gui.FontRenderer;
 
 import java.util.List;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 @OnlyIn(Dist.CLIENT)
-public class ItemReplacerScreen extends Screen 
+public class PipePlacerScreen extends Screen 
 {
 	
 	public int sizeFactor = 5;
 	public GuiGrid grid;
 	public GuiGrid subGrid;
 	
-    protected ItemReplacerScreen() 
+    protected PipePlacerScreen() 
     {
     	super(new StringTextComponent("Title"));
     }
@@ -58,7 +59,6 @@ public class ItemReplacerScreen extends Screen
         int canvasStartX = width / sizeFactor;
         int canvasStartY = height / sizeFactor;
         grid = new GuiGrid(4, 3, canvasStartX, canvasStartY, width - canvasStartX, height - canvasStartY);
-        //subGrid = new GuiGrid(grid.getCell(2, 2), 4, 4);
         
         GridButton b1 = new GridButton(grid, 2, 2, new StringTextComponent("Click Me"), 
         		(button) -> {
@@ -90,17 +90,14 @@ public class ItemReplacerScreen extends Screen
         		2);
         this.addButton(b2);
         
-        /*
-        TextFieldWidget textWidget = new TextFieldWidget(font, 0, 0, 160, 20, new StringTextComponent("Numeric Input"));
-        this.addWidget(textWidget);
-        */
+        
     }
 
     @Override
     public void render(MatrixStack matrixStack, int mouseX, int mouseY, float partialTicks) 
     {
-    	this.grid.render(matrixStack, this.font);
-    	
+    	this.grid.render(matrixStack, this.minecraft.font);
+    	this.t.render(matrixStack, mouseX, mouseY, partialTicks);
         super.render(matrixStack, mouseX, mouseY, partialTicks);
     }
 }
@@ -108,6 +105,13 @@ public class ItemReplacerScreen extends Screen
 
 
 
+//TextFieldWidget t = new TextFieldWidget(this.minecraft.font, grid.getX(1), grid.getY(2), 50, 20, (TextFieldWidget)null, new StringTextComponent("text field"));
+//
+//Predicate<String> onlyNumeric = (s -> s.matches("^[1-9]\\d*$"));
+//
+//t.setFilter(onlyNumeric);
+//
+//this.addWidget(this.t);
 
 
 
