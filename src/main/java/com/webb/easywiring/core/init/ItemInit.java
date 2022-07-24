@@ -13,7 +13,7 @@ import net.minecraftforge.registries.ForgeRegistries;
 public class ItemInit 
 {
 	public static final DeferredRegister<Item> ITEMS = DeferredRegister.create(ForgeRegistries.ITEMS, EasyWiring.MOD_ID);
-	
+
 	public static final RegistryObject<PipePlacerItem> PIPE_PLACER = 
 			ITEMS.register("pipe_placer", 
 					() -> new PipePlacerItem(new Item.Properties().tab(ItemGroup.TAB_MISC)));
