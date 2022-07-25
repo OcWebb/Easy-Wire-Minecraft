@@ -31,7 +31,8 @@ import net.minecraftforge.common.util.Constants;
 
 public class PipePlacer extends Item
 {
-	private ArrayList<BlockPos> machines = new ArrayList<BlockPos>();
+	public static ArrayList<BlockPos> machines = new ArrayList<BlockPos>();
+	public static ArrayList<BlockPos> currentPath = new ArrayList<BlockPos>();
 	public int distDown = 2;
 	
 	public PipePlacer(Properties properties) 
@@ -52,7 +53,7 @@ public class PipePlacer extends Item
 	public ActionResult<ItemStack> use(World world, PlayerEntity player, Hand hand) {
 		if (player.isCrouching())
 		{
-			machines.clear();
+			PipePlacer.machines.clear();
 			System.out.println("machines cleared");
 		}
 		
@@ -66,21 +67,20 @@ public class PipePlacer extends Item
 		World world = ItemContext.getLevel();
 		BlockPos blockPos = ItemContext.getClickedPos();
 		
-		
 		if (world.isClientSide)
 		{
-			if (machines.size() >= 2)
+			if (PipePlacer.machines.size() >= 2)
 			{
-				machines.clear();
+				PipePlacer.machines.clear();
 			}
 			
-			if (!machines.contains(blockPos))
+			if (!PipePlacer.machines.contains(blockPos))
 			{
-				machines.add(blockPos);
+				PipePlacer.machines.add(blockPos);
 			}
 		};
 		
-		if (machines.size() < 2)
+		if (PipePlacer.machines.size() < 2)
 		{
 			return ActionResultType.SUCCESS;
 		}
@@ -88,7 +88,9 @@ public class PipePlacer extends Item
 		if (!world.isClientSide)
 		{
 			// route between blocks
-			ArrayList<BlockPos> path = Pathfinder.GetWirePath(world, machines.get(0), machines.get(1), distDown);
+			ArrayList<BlockPos> path = Pathfinder.GetWirePath(world, PipePlacer.machines.get(0), PipePlacer.machines.get(1), distDown);
+			currentPath = path;
+			
 			System.out.println("Path returned: " + path.size());
 			
 			if (!path.isEmpty())
@@ -96,10 +98,11 @@ public class PipePlacer extends Item
 				for (BlockPos curBlock : path)
 				{
 //					world.removeBlock(curBlock, false);
-					world.setBlock(curBlock, Blocks.REDSTONE_BLOCK.getStateForPlacement(null), Constants.BlockFlags.DEFAULT);
+//					world.setBlock(curBlock, Blocks.REDSTONE_BLOCK.getStateForPlacement(null), Constants.BlockFlags.DEFAULT);
+					
 				}
 				
-				machines.clear();
+				PipePlacer.machines.clear();
 			} 
 			else
 			{
