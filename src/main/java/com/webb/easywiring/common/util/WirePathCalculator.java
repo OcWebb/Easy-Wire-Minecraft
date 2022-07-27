@@ -118,12 +118,13 @@ public class WirePathCalculator
 		
 		if (distanceToDestinationBlock <= 1)
 		{
-			Collections.sort(openList);
-			Node curNode = openList.get(0);
+			Collections.sort(closedList);
+			Node curNode = closedList.get(0);
+			path.add(curNode.block);
 			while (curNode.parent != null)
 			{
-				path.add(curNode.block);
 				curNode = curNode.parent;
+				path.add(curNode.block);
 			}
 		}
 		
@@ -150,11 +151,33 @@ public class WirePathCalculator
 		Block aboveBlockObject = aboveState.getBlock();
 		
 		boolean currentBlockIsAir = currentBlockObject.isAir(currentBlockState, world, block);
-		boolean currentBlockIsOnSurface = aboveBlockObject.isAir(aboveState, world, aboveBlock);
+		boolean blockOnSurface = aboveBlockObject.isAir(aboveState, world, aboveBlock);
 		
 		double score = -distanceToDestination;
 		
-		if (currentBlockIsAir || currentBlockIsOnSurface)
+		for (int zoff = -1; zoff <= 1; zoff++)
+		{
+			for (int xoff = -1; xoff <= 1; xoff++)
+			{
+				if (blockOnSurface)
+				{
+					break;
+				}
+				
+				if ((Math.abs(zoff) == 1 && Math.abs(xoff) == 1)) 
+				{
+					continue;
+				}
+				
+				BlockPos neighborBlock = block.offset(xoff, 0, zoff);
+				BlockState neighborBlockState = world.getBlockState(aboveBlock);
+				Block neighborBlockObject = aboveState.getBlock();
+				
+				blockOnSurface = neighborBlockObject.isAir(currentBlockState, world, block);
+			}
+		}
+		
+		if (currentBlockIsAir || blockOnSurface)
 		{
 			score = score - 6;
 		}

@@ -53,7 +53,8 @@ public class PipePlacer extends Item
 	public ActionResult<ItemStack> use(World world, PlayerEntity player, Hand hand) {
 		if (player.isCrouching())
 		{
-			PipePlacer.machines.clear();
+			machines.clear();
+			currentPath.clear();
 			System.out.println("machines cleared");
 		}
 		
@@ -69,18 +70,20 @@ public class PipePlacer extends Item
 		
 		if (world.isClientSide)
 		{
-			if (PipePlacer.machines.size() >= 2)
+			if (machines.size() >= 2)
 			{
-				PipePlacer.machines.clear();
+				machines.clear();
+				currentPath.clear();
+				
 			}
 			
-			if (!PipePlacer.machines.contains(blockPos))
+			if (!machines.contains(blockPos))
 			{
-				PipePlacer.machines.add(blockPos);
+				machines.add(blockPos);
 			}
 		};
 		
-		if (PipePlacer.machines.size() < 2)
+		if (machines.size() < 2)
 		{
 			return ActionResultType.SUCCESS;
 		}
@@ -88,7 +91,7 @@ public class PipePlacer extends Item
 		if (!world.isClientSide)
 		{
 			// route between blocks
-			ArrayList<BlockPos> path = Pathfinder.GetWirePath(world, PipePlacer.machines.get(0), PipePlacer.machines.get(1), distDown);
+			ArrayList<BlockPos> path = Pathfinder.GetWirePath(world, machines.get(0), machines.get(1), distDown);
 			currentPath = path;
 			
 			System.out.println("Path returned: " + path.size());
@@ -102,7 +105,7 @@ public class PipePlacer extends Item
 					
 				}
 				
-				PipePlacer.machines.clear();
+//				machines.clear();
 			} 
 			else
 			{
