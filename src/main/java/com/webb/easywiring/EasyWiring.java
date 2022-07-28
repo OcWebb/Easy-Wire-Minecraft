@@ -17,6 +17,7 @@ import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.webb.easywiring.common.render.PipeRendererSubscriber;
 import com.webb.easywiring.core.init.ItemInit;
 
 import java.util.stream.Collectors;

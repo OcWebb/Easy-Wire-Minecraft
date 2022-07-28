@@ -31,7 +31,8 @@ import net.minecraftforge.common.util.Constants;
 
 public class PipePlacer extends Item
 {
-	private ArrayList<BlockPos> machines = new ArrayList<BlockPos>();
+	public static ArrayList<BlockPos> machines = new ArrayList<BlockPos>();
+	public static ArrayList<BlockPos> currentPath = new ArrayList<BlockPos>();
 	public int distDown = 2;
 	
 	public PipePlacer(Properties properties) 
@@ -53,6 +54,7 @@ public class PipePlacer extends Item
 		if (player.isCrouching())
 		{
 			machines.clear();
+			currentPath.clear();
 			System.out.println("machines cleared");
 		}
 		
@@ -66,12 +68,13 @@ public class PipePlacer extends Item
 		World world = ItemContext.getLevel();
 		BlockPos blockPos = ItemContext.getClickedPos();
 		
-		
 		if (world.isClientSide)
 		{
 			if (machines.size() >= 2)
 			{
 				machines.clear();
+				currentPath.clear();
+				
 			}
 			
 			if (!machines.contains(blockPos))
@@ -89,6 +92,8 @@ public class PipePlacer extends Item
 		{
 			// route between blocks
 			ArrayList<BlockPos> path = Pathfinder.GetWirePath(world, machines.get(0), machines.get(1), distDown);
+			currentPath = path;
+			
 			System.out.println("Path returned: " + path.size());
 			
 			if (!path.isEmpty())
@@ -96,10 +101,11 @@ public class PipePlacer extends Item
 				for (BlockPos curBlock : path)
 				{
 //					world.removeBlock(curBlock, false);
-					world.setBlock(curBlock, Blocks.REDSTONE_BLOCK.getStateForPlacement(null), Constants.BlockFlags.DEFAULT);
+//					world.setBlock(curBlock, Blocks.REDSTONE_BLOCK.getStateForPlacement(null), Constants.BlockFlags.DEFAULT);
+					
 				}
 				
-				machines.clear();
+//				machines.clear();
 			} 
 			else
 			{
