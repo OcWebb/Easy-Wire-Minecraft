@@ -9,7 +9,6 @@ public class Node implements Comparable<Node>
 	public BlockPos block;
 	public double score;
 	public Node parent;
-//	public ArrayList<Node> children;
 
 
 	public Node(BlockPos blockPos, double scoreIn, Node Parent)
