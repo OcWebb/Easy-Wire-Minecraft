@@ -2,11 +2,7 @@ package com.webb.easywiring.common.render;
 
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormat;
-
-import net.minecraft.client.renderer.GameRenderer;
-import net.minecraft.client.renderer.RenderStateShard;
 import net.minecraft.client.renderer.RenderType;
-import net.minecraft.client.renderer.ShaderInstance;
 
 public class CustomRenderTypes extends RenderType
 {
@@ -26,23 +22,12 @@ public class CustomRenderTypes extends RenderType
 
 	private static RenderType.CompositeState overlayState()
 	{
-
-//		return RenderType.CompositeState.builder()
-//				.setLightmapState(LIGHTMAP)
-//				.setShaderState(RENDERTYPE_TRANSLUCENT_SHADER)
-//				.setTextureState(BLOCK_SHEET_MIPPED)
-//				.setTransparencyState(TRANSLUCENT_TRANSPARENCY)
-//				.setOutputState(TRANSLUCENT_TARGET)
-//				.setDepthTestState(NO_DEPTH_TEST)
-//				.setCullState(NO_CULL)
-//				.createCompositeState(true);
-
 		return RenderType.CompositeState.builder()
 				.setLightmapState(LIGHTMAP)
-				.setShaderState(RenderStateShard.POSITION_COLOR_LIGHTMAP_SHADER)
+				.setShaderState(POSITION_COLOR_LIGHTMAP_SHADER)
 				.setTextureState(NO_TEXTURE)
 				.setDepthTestState(NO_DEPTH_TEST)
-				.setWriteMaskState(RenderStateShard.COLOR_DEPTH_WRITE)
+				.setWriteMaskState(COLOR_DEPTH_WRITE)
 				.setCullState(NO_CULL)
 				.createCompositeState(true);
 	}

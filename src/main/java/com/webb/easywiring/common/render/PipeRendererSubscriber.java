@@ -1,6 +1,8 @@
 package com.webb.easywiring.common.render;
 
 import com.mojang.math.Matrix3f;
+import com.mojang.math.Quaternion;
+import com.mojang.math.Vector3f;
 import net.minecraftforge.client.event.RenderLevelStageEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
@@ -12,7 +14,7 @@ import com.webb.easywiring.common.items.PipePlacer;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.client.renderer.RenderType;
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.core.BlockPos;
 import com.mojang.math.Matrix4f;
 import net.minecraft.world.phys.Vec3;
@@ -45,10 +47,18 @@ public class PipeRendererSubscriber
         MultiBufferSource.BufferSource buffer = Minecraft.getInstance().renderBuffers().bufferSource();
         PoseStack stack = event.getPoseStack();
 
+        RenderSystem.disableDepthTest();
         stack.pushPose();
 
         Vec3 cam = Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
         stack.translate(-cam.x(), -cam.y(), -cam.z());
+
+        for (BlockPos node : PipePlacer.currentPath)
+        {
+            renderBlockOutline(buffer, stack,
+                    node,
+                    1, 195, 195, 195, 1);
+        }
 
         for (BlockPos machine : PipePlacer.machines)
         {
@@ -57,14 +67,8 @@ public class PipeRendererSubscriber
                     1, 240, 20, 20, 1);
         }
 
-        for (BlockPos node : PipePlacer.currentPath)
-        {
-            renderBlockOutline(buffer, stack,
-                    node,
-                    1, 255, 255, 255, 1);
-        }
-
         stack.popPose();
+        RenderSystem.enableDepthTest();
     }
 
     private static void renderBlockOutline(MultiBufferSource.BufferSource buffer, PoseStack mstack, BlockPos block, float lineWidth, int r, int g, int b, int a)
@@ -80,11 +84,47 @@ public class PipeRendererSubscriber
 
         Matrix4f matrix = mstack.last().pose();
 
+        float scale = 0.75f;
+        float offsetAmount = (1 - scale)/2;
+
+        mstack.translate(offsetAmount, offsetAmount, offsetAmount);
+        mstack.scale(scale, scale, scale);
+
         //Draw top face of block
-        builder.vertex(matrix, 1, 1.01f, 0).color(r, g, b, a).uv2(LIGHT_FULLBRIGHT).endVertex();
-        builder.vertex(matrix, 0, 1.01f, 0).color(r, g, b, a).uv2(LIGHT_FULLBRIGHT).endVertex();
-        builder.vertex(matrix, 0, 1.01f, 1).color(r, g, b, a).uv2(LIGHT_FULLBRIGHT).endVertex();
-        builder.vertex(matrix, 1, 1.01f, 1).color(r, g, b, a).uv2(LIGHT_FULLBRIGHT).endVertex();
+        builder.vertex(matrix, 1, 1, 0).color(r, g, b, a).uv2(LIGHT_FULLBRIGHT).endVertex();
+        builder.vertex(matrix, 0, 1, 0).color(r, g, b, a).uv2(LIGHT_FULLBRIGHT).endVertex();
+        builder.vertex(matrix, 0, 1, 1).color(r, g, b, a).uv2(LIGHT_FULLBRIGHT).endVertex();
+        builder.vertex(matrix, 1, 1, 1).color(r, g, b, a).uv2(LIGHT_FULLBRIGHT).endVertex();
+
+        //Draw bottom face of block
+        builder.vertex(matrix, 1, 0, 0).color(r, g, b, a).uv2(LIGHT_FULLBRIGHT).endVertex();
+        builder.vertex(matrix, 0, 0, 0).color(r, g, b, a).uv2(LIGHT_FULLBRIGHT).endVertex();
+        builder.vertex(matrix, 0, 0, 1).color(r, g, b, a).uv2(LIGHT_FULLBRIGHT).endVertex();
+        builder.vertex(matrix, 1, 0, 1).color(r, g, b, a).uv2(LIGHT_FULLBRIGHT).endVertex();
+
+        //Draw s1 face of block
+        builder.vertex(matrix, 1, 1, 0).color(r, g, b, a).uv2(LIGHT_FULLBRIGHT).endVertex();
+        builder.vertex(matrix, 1, 0, 0).color(r, g, b, a).uv2(LIGHT_FULLBRIGHT).endVertex();
+        builder.vertex(matrix, 1, 0, 1).color(r, g, b, a).uv2(LIGHT_FULLBRIGHT).endVertex();
+        builder.vertex(matrix, 1, 1, 1).color(r, g, b, a).uv2(LIGHT_FULLBRIGHT).endVertex();
+
+        //Draw -s1 face of block
+        builder.vertex(matrix, 0, 1, 0).color(r, g, b, a).uv2(LIGHT_FULLBRIGHT).endVertex();
+        builder.vertex(matrix, 0, 0, 0).color(r, g, b, a).uv2(LIGHT_FULLBRIGHT).endVertex();
+        builder.vertex(matrix, 0, 0, 1).color(r, g, b, a).uv2(LIGHT_FULLBRIGHT).endVertex();
+        builder.vertex(matrix, 0, 1, 1).color(r, g, b, a).uv2(LIGHT_FULLBRIGHT).endVertex();
+
+        //Draw s2 face of block
+        builder.vertex(matrix, 0, 1, 1).color(r, g, b, a).uv2(LIGHT_FULLBRIGHT).endVertex();
+        builder.vertex(matrix, 0, 0, 1).color(r, g, b, a).uv2(LIGHT_FULLBRIGHT).endVertex();
+        builder.vertex(matrix, 1, 0, 1).color(r, g, b, a).uv2(LIGHT_FULLBRIGHT).endVertex();
+        builder.vertex(matrix, 1, 1, 1).color(r, g, b, a).uv2(LIGHT_FULLBRIGHT).endVertex();
+
+        //Draw -s2 face of block
+        builder.vertex(matrix, 0, 1, 0).color(r, g, b, a).uv2(LIGHT_FULLBRIGHT).endVertex();
+        builder.vertex(matrix, 0, 0, 0).color(r, g, b, a).uv2(LIGHT_FULLBRIGHT).endVertex();
+        builder.vertex(matrix, 1, 0, 0).color(r, g, b, a).uv2(LIGHT_FULLBRIGHT).endVertex();
+        builder.vertex(matrix, 1, 1, 0).color(r, g, b, a).uv2(LIGHT_FULLBRIGHT).endVertex();
 
         mstack.popPose();
 
