@@ -82,7 +82,7 @@ public class PipePlacer extends Item
 		if (!world.isClientSide)
 		{
 			// route between blocks
-			ArrayList<BlockPos> path = Pathfinder.GetWirePath(world, machines.get(0), machines.get(1), distDown);
+			ArrayList<BlockPos> path = Pathfinder.GetWirePath(world, machines.get(0), machines.get(1));
 			currentPath = path;
 
 			System.out.println("Path returned: " + path.size());

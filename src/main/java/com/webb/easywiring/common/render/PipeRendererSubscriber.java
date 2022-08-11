@@ -1,8 +1,9 @@
 package com.webb.easywiring.common.render;
 
-import com.mojang.math.Matrix3f;
-import com.mojang.math.Quaternion;
 import com.mojang.math.Vector3f;
+import net.minecraft.core.Vec3i;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.client.event.RenderLevelStageEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
@@ -22,6 +23,10 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
 import net.minecraft.client.renderer.*;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 
 import static net.minecraftforge.client.event.RenderLevelStageEvent.Stage;
 
@@ -53,27 +58,141 @@ public class PipeRendererSubscriber
         Vec3 cam = Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
         stack.translate(-cam.x(), -cam.y(), -cam.z());
 
-        for (BlockPos node : PipePlacer.currentPath)
+        ArrayList<BlockPos> nodesSortedByDistance = sortBlocksByDistanceToPlayer(player, PipePlacer.currentPath);
+
+        for (BlockPos node : nodesSortedByDistance)
         {
             renderBlockOutline(buffer, stack,
-                    node,
-                    1, 195, 195, 195, 1);
+                    node, 200, 200, 200, 1);
+
+//            Vec3 lookAngle = player.getLookAngle();
+
+            if (player.isCrouching() && nodesSortedByDistance.indexOf(node) >= nodesSortedByDistance.size()-4)
+            {
+                renderNodeDepthLine(buffer, stack,
+                        node, 0.02f, 40, 230, 20, 1);
+            }
         }
 
         for (BlockPos machine : PipePlacer.machines)
         {
             renderBlockOutline(buffer, stack,
-                    machine,
-                    1, 240, 20, 20, 1);
+                    machine, 240, 20, 20, 1);
         }
 
         stack.popPose();
         RenderSystem.enableDepthTest();
     }
 
-    private static void renderBlockOutline(MultiBufferSource.BufferSource buffer, PoseStack mstack, BlockPos block, float lineWidth, int r, int g, int b, int a)
+    private static ArrayList<BlockPos> sortBlocksByDistanceToPlayer(LocalPlayer player, ArrayList<BlockPos> unsortedList)
     {
-        VertexConsumer builder = buffer.getBuffer(CustomRenderTypes.overlay());
+        ArrayList<BlockPos> sortedList = new ArrayList<BlockPos>();
+        sortedList.addAll(unsortedList);
+        Vec3 playerPos = player.position();
+        Vec3i intPlayerPos = new Vec3i(playerPos.x, playerPos.y+1, playerPos.z);
+
+        Collections.sort(sortedList, new Comparator<BlockPos>() {
+            @Override
+            public int compare(BlockPos first, BlockPos second)
+            {
+                double firstDistance = first.distSqr(intPlayerPos);
+                double secondDistance = second.distSqr(intPlayerPos);
+
+                // -1 - less than, 1 - greater than, 0 - equal, all inversed for descending
+                return firstDistance > secondDistance ? -1 : (firstDistance < secondDistance) ? 1 : 0;
+            }
+        });
+
+        return sortedList;
+    }
+
+
+    private static void renderNodeDepthLine(MultiBufferSource.BufferSource buffer, PoseStack mstack, BlockPos block, float lineWidth, int r, int g, int b, int a)
+    {
+        ArrayList<BlockPos> blocksToSurface = new ArrayList<BlockPos>();
+        Level world = Minecraft.getInstance().level;
+
+        int i = 0;
+        int max = 10;
+        boolean success = false;
+
+        while (i++ < max)
+        {
+            BlockPos ithBlockAbove = block.offset(0, i, 0);
+            BlockState blockState = world.getBlockState(ithBlockAbove);
+
+            if (blockState.isAir())
+            {
+                success = true;
+                break;
+            }
+            blocksToSurface.add(ithBlockAbove);
+        }
+
+        if (success)
+        {
+            int blockCount = blocksToSurface.size();
+
+            for (int j = 0; j < blockCount; j++)
+            {
+                BlockPos currentBlock = blocksToSurface.get(j);
+
+                float crosslineWidth = 0.25f;
+
+                if (j == blockCount-1)
+                {
+                    crosslineWidth = 0.85f;
+                }
+
+                renderDepthLine(buffer, mstack,
+                        currentBlock, lineWidth, crosslineWidth, r, g, b, a);
+            }
+        }
+
+    }
+
+    private static void renderDepthLine(MultiBufferSource.BufferSource buffer, PoseStack mstack, BlockPos block, float lineWidth, float crosslineWidth, int r, int g, int b, int a)
+    {
+        VertexConsumer builder = buffer.getBuffer(CustomRenderTypes.overlayLines());
+
+        int x = block.getX();
+        int y = block.getY();
+        int z = block.getZ();
+
+        mstack.pushPose();
+
+        mstack.translate(x+0.5, y, z+0.5);
+        Matrix4f matrix = mstack.last().pose();
+
+        builder.vertex(matrix, 0, 0, 0).color(r, g, b, a).uv2(LIGHT_FULLBRIGHT).endVertex();
+        builder.vertex(matrix, 0, 1, 0).color(r, g, b, a).uv2(LIGHT_FULLBRIGHT).endVertex();
+
+        // top cross
+        float crosslineHalfWidth = crosslineWidth/2;
+        builder.vertex(matrix, -crosslineHalfWidth, 1, 0).color(r, g, b, a).uv2(LIGHT_FULLBRIGHT).endVertex();
+        builder.vertex(matrix, crosslineHalfWidth, 1, 0).color(r, g, b, a).uv2(LIGHT_FULLBRIGHT).endVertex();
+
+        builder.vertex(matrix, -crosslineHalfWidth, 0, 1).color(r, g, b, a).uv2(LIGHT_FULLBRIGHT).endVertex();
+        builder.vertex(matrix, crosslineHalfWidth, 0, 1).color(r, g, b, a).uv2(LIGHT_FULLBRIGHT).endVertex();
+
+        mstack.popPose();
+
+        buffer.endBatch(CustomRenderTypes.overlayLines());
+    }
+
+    private static void renderText(MultiBufferSource.BufferSource buffer, PoseStack mstack, BlockPos block, String text, int r, int g, int b, int a)
+    {
+//        MultiBufferSource.BufferSource irendertypebuffer = MultiBufferSource.immediate(Tesselator.getInstance().getBuilder());
+//
+//        int i = Font.drawInBatch(p_228078_1_, p_228078_2_, p_228078_3_, p_228078_4_, p_228078_6_, p_228078_5_,
+//                irendertypebuffer, false, 0, LightTexture.FULL_BRIGHT);
+//        irendertypebuffer.endBatch();
+    }
+
+
+    private static void renderBlockOutline(MultiBufferSource.BufferSource buffer, PoseStack mstack, BlockPos block, int r, int g, int b, int a)
+    {
+        VertexConsumer builder = buffer.getBuffer(CustomRenderTypes.overlayQuads());
 
         int x = block.getX();
         int y = block.getY();
@@ -84,7 +203,7 @@ public class PipeRendererSubscriber
 
         Matrix4f matrix = mstack.last().pose();
 
-        float scale = 0.75f;
+        float scale = 0.9f;
         float offsetAmount = (1 - scale)/2;
 
         mstack.translate(offsetAmount, offsetAmount, offsetAmount);
@@ -103,32 +222,32 @@ public class PipeRendererSubscriber
         builder.vertex(matrix, 1, 0, 1).color(r, g, b, a).uv2(LIGHT_FULLBRIGHT).endVertex();
 
         //Draw s1 face of block
-        builder.vertex(matrix, 1, 1, 0).color(r, g, b, a).uv2(LIGHT_FULLBRIGHT).endVertex();
-        builder.vertex(matrix, 1, 0, 0).color(r, g, b, a).uv2(LIGHT_FULLBRIGHT).endVertex();
-        builder.vertex(matrix, 1, 0, 1).color(r, g, b, a).uv2(LIGHT_FULLBRIGHT).endVertex();
-        builder.vertex(matrix, 1, 1, 1).color(r, g, b, a).uv2(LIGHT_FULLBRIGHT).endVertex();
+        builder.vertex(matrix, 1, 1, 0).color(r-10, g-10, b-10, a).uv2(LIGHT_FULLBRIGHT).endVertex();
+        builder.vertex(matrix, 1, 0, 0).color(r-10, g-10, b-10, a).uv2(LIGHT_FULLBRIGHT).endVertex();
+        builder.vertex(matrix, 1, 0, 1).color(r-10, g-10, b-10, a).uv2(LIGHT_FULLBRIGHT).endVertex();
+        builder.vertex(matrix, 1, 1, 1).color(r-10, g-10, b-10, a).uv2(LIGHT_FULLBRIGHT).endVertex();
 
         //Draw -s1 face of block
-        builder.vertex(matrix, 0, 1, 0).color(r, g, b, a).uv2(LIGHT_FULLBRIGHT).endVertex();
-        builder.vertex(matrix, 0, 0, 0).color(r, g, b, a).uv2(LIGHT_FULLBRIGHT).endVertex();
-        builder.vertex(matrix, 0, 0, 1).color(r, g, b, a).uv2(LIGHT_FULLBRIGHT).endVertex();
-        builder.vertex(matrix, 0, 1, 1).color(r, g, b, a).uv2(LIGHT_FULLBRIGHT).endVertex();
+        builder.vertex(matrix, 0, 1, 0).color(r-10, g-10, b-10, a).uv2(LIGHT_FULLBRIGHT).endVertex();
+        builder.vertex(matrix, 0, 0, 0).color(r-10, g-10, b-10, a).uv2(LIGHT_FULLBRIGHT).endVertex();
+        builder.vertex(matrix, 0, 0, 1).color(r-10, g-10, b-10, a).uv2(LIGHT_FULLBRIGHT).endVertex();
+        builder.vertex(matrix, 0, 1, 1).color(r-10, g-10, b-10, a).uv2(LIGHT_FULLBRIGHT).endVertex();
 
         //Draw s2 face of block
-        builder.vertex(matrix, 0, 1, 1).color(r, g, b, a).uv2(LIGHT_FULLBRIGHT).endVertex();
-        builder.vertex(matrix, 0, 0, 1).color(r, g, b, a).uv2(LIGHT_FULLBRIGHT).endVertex();
-        builder.vertex(matrix, 1, 0, 1).color(r, g, b, a).uv2(LIGHT_FULLBRIGHT).endVertex();
-        builder.vertex(matrix, 1, 1, 1).color(r, g, b, a).uv2(LIGHT_FULLBRIGHT).endVertex();
+        builder.vertex(matrix, 0, 1, 1).color(r+10, g+10, b+10, a).uv2(LIGHT_FULLBRIGHT).endVertex();
+        builder.vertex(matrix, 0, 0, 1).color(r+10, g+10, b+10, a).uv2(LIGHT_FULLBRIGHT).endVertex();
+        builder.vertex(matrix, 1, 0, 1).color(r+10, g+10, b+10, a).uv2(LIGHT_FULLBRIGHT).endVertex();
+        builder.vertex(matrix, 1, 1, 1).color(r+10, g+10, b+10, a).uv2(LIGHT_FULLBRIGHT).endVertex();
 
         //Draw -s2 face of block
-        builder.vertex(matrix, 0, 1, 0).color(r, g, b, a).uv2(LIGHT_FULLBRIGHT).endVertex();
-        builder.vertex(matrix, 0, 0, 0).color(r, g, b, a).uv2(LIGHT_FULLBRIGHT).endVertex();
-        builder.vertex(matrix, 1, 0, 0).color(r, g, b, a).uv2(LIGHT_FULLBRIGHT).endVertex();
-        builder.vertex(matrix, 1, 1, 0).color(r, g, b, a).uv2(LIGHT_FULLBRIGHT).endVertex();
+        builder.vertex(matrix, 0, 1, 0).color(r+10, g+10, b+10, a).uv2(LIGHT_FULLBRIGHT).endVertex();
+        builder.vertex(matrix, 0, 0, 0).color(r+10, g+10, b+10, a).uv2(LIGHT_FULLBRIGHT).endVertex();
+        builder.vertex(matrix, 1, 0, 0).color(r+10, g+10, b+10, a).uv2(LIGHT_FULLBRIGHT).endVertex();
+        builder.vertex(matrix, 1, 1, 0).color(r+10, g+10, b+10, a).uv2(LIGHT_FULLBRIGHT).endVertex();
 
         mstack.popPose();
 
-        buffer.endBatch(CustomRenderTypes.overlay());
+        buffer.endBatch(CustomRenderTypes.overlayQuads());
     }
 
 }

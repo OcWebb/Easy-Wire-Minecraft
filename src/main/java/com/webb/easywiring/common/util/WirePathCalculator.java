@@ -10,25 +10,17 @@ import net.minecraft.world.level.Level;
 
 public class WirePathCalculator
 {
-	static int MAX_SEARCH = 800;
+	static int MAX_SEARCH = 1000;
 
-	public ArrayList<BlockPos> CalculatePath (Level world, BlockPos startBlock, BlockPos destBlock, int distDown)
+	public ArrayList<BlockPos> CalculatePath (Level world, BlockPos startBlock, BlockPos destBlock, int blockBuffer)
 	{
 		ArrayList<BlockPos> path = new ArrayList<BlockPos>();
 		ArrayList<BlockPos> blocksToAvoid = new ArrayList<BlockPos>();
 		BlockPos currentBlock = startBlock;
-		BlockPos goalBlock = destBlock.below(distDown);
+		BlockPos goalBlock = destBlock;
 
-		blocksToAvoid.add(startBlock);
-		blocksToAvoid.add(destBlock);
-
-		// remove distDown blocks below startBlock
-		for (int i = 1; i <= distDown; i++)
-		{
-			currentBlock = startBlock.below(i);
-			path.add(currentBlock);
-		}
-
+//		blocksToAvoid.add(startBlock);
+//		blocksToAvoid.add(destBlock);
 
 		// add blocks along path
 		int distanceToDestinationBlock = startBlock.distManhattan(goalBlock);
@@ -127,12 +119,6 @@ public class WirePathCalculator
 			}
 		}
 
-		// remove distDown blocks below destBlock
-		for (int i = 1; i <= distDown; i++)
-		{
-			path.add(destBlock.below(i));
-		}
-
 		return path;
 	}
 
@@ -143,47 +129,51 @@ public class WirePathCalculator
 		double distanceToDestination = block.distManhattan(destination);
 
 		BlockState currentBlockState = world.getBlockState(block);
-		Block currentBlockObject = currentBlockState.getBlock();
 
 		BlockPos aboveBlock = block.offset(0, 1, 0);
 		BlockState aboveState = world.getBlockState(aboveBlock);
-		Block aboveBlockObject = aboveState.getBlock();
+
+		BlockPos belowBlock = block.offset(0, -1, 0);
+		BlockState belowState = world.getBlockState(belowBlock);
 
 		boolean currentBlockIsAir = currentBlockState.isAir();
-		boolean blockOnSurface = aboveState.isAir();
+		boolean blockOnSurface = aboveState.isAir() || belowState.isAir();
 
 		double score = -distanceToDestination;
 
 		for (int zoff = -1; zoff <= 1; zoff++)
 		{
+			if (blockOnSurface)
+			{
+				break;
+			}
+
 			for (int xoff = -1; xoff <= 1; xoff++)
 			{
-				if (blockOnSurface)
-				{
-					break;
-				}
-
 				if ((Math.abs(zoff) == 1 && Math.abs(xoff) == 1))
 				{
 					continue;
 				}
 
 				BlockPos neighborBlock = block.offset(xoff, 0, zoff);
-				BlockState neighborBlockState = world.getBlockState(aboveBlock);
-				Block neighborBlockObject = aboveState.getBlock();
-
+				BlockState neighborBlockState = world.getBlockState(neighborBlock);
 				blockOnSurface = neighborBlockState.isAir();
 			}
 		}
 
-		if (currentBlockIsAir || blockOnSurface)
+		if (blockOnSurface)
 		{
-			score = score - 6;
+			score -= 6;
+		}
+
+		if (currentBlockIsAir)
+		{
+			score -= 10;
 		}
 
 		if (isDiagnal)
 		{
-			score = score + 0.5;
+			score += 0.5;
 		}
 
 		return score;
