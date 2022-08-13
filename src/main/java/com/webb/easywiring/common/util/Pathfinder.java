@@ -11,7 +11,7 @@ public class Pathfinder
 
 	public static ArrayList<BlockPos> GetWirePath (Level world, BlockPos startBlock, BlockPos destBlock)
 	{
-		ArrayList<BlockPos> path = wirePathCalculator.CalculatePath(world, startBlock, destBlock, 2);
+		ArrayList<BlockPos> path = wirePathCalculator.CalculatePath(world, startBlock, destBlock, 3);
 
 		return path;
 	}

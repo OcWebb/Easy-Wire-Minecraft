@@ -1,7 +1,10 @@
 package com.webb.easywiring.common.render;
 
 import com.mojang.math.Vector3f;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.renderer.debug.DebugRenderer;
 import net.minecraft.core.Vec3i;
+import net.minecraft.util.FastColor;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.client.event.RenderLevelStageEvent;
@@ -28,6 +31,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 
+import static net.minecraft.client.gui.GuiComponent.drawCenteredString;
 import static net.minecraftforge.client.event.RenderLevelStageEvent.Stage;
 
 
@@ -35,6 +39,7 @@ import static net.minecraftforge.client.event.RenderLevelStageEvent.Stage;
 public class PipeRendererSubscriber
 {
     private static final int LIGHT_FULLBRIGHT = 0xF000F0;
+    private static final int TEXT_COLOR = FastColor.ARGB32.color(0, 0, 0, 255);
 
 // here for ease of access - /fill ~-15 ~-10 ~-15 ~15 ~0 ~15 minecraft:air
 
@@ -65,12 +70,24 @@ public class PipeRendererSubscriber
             renderBlockOutline(buffer, stack,
                     node, 200, 200, 200, 1);
 
-//            Vec3 lookAngle = player.getLookAngle();
-
-            if (player.isCrouching() && nodesSortedByDistance.indexOf(node) >= nodesSortedByDistance.size()-4)
+            boolean isCloseEnough = nodesSortedByDistance.indexOf(node) >= nodesSortedByDistance.size() - 4;
+            if (player.isCrouching() && isCloseEnough || true)
             {
-                renderNodeDepthLine(buffer, stack,
-                        node, 0.02f, 40, 230, 20, 1);
+//                renderNodeDepthLine(buffer, stack,
+//                        node, 0.02f, 40, 230, 20, 1);
+
+                stack.pushPose();
+
+                stack.translate(node.getX()+0.5, node.getY()+1.02, node.getZ()+0.5);
+                stack.scale(0.04f, 0.04f, 0.04f);
+                stack.mulPose(Vector3f.XP.rotationDegrees(90));
+
+                RenderSystem.disableDepthTest();
+                Minecraft.getInstance().font.draw(stack, nodesSortedByDistance.indexOf(node)+"", 0, 0, TEXT_COLOR);
+//                DebugRenderer.renderFloatingText(nodesSortedByDistance.indexOf(node)+"", node.getX()+0.5, node.getY()+1.02, node.getZ()+0.5, TEXT_COLOR, 0.02f, true, 0.0F, true);
+//                RenderSystem.disableDepthTest();
+
+                stack.popPose();
             }
         }
 

@@ -1,8 +1,8 @@
 package com.webb.easywiring.common.util;
 
-import java.util.ArrayList;
-import java.util.Collections;
+import java.util.*;
 
+import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.core.BlockPos;
@@ -10,17 +10,13 @@ import net.minecraft.world.level.Level;
 
 public class WirePathCalculator
 {
-	static int MAX_SEARCH = 1000;
+	static int MAX_SEARCH = 2500;
 
-	public ArrayList<BlockPos> CalculatePath (Level world, BlockPos startBlock, BlockPos destBlock, int blockBuffer)
+	public ArrayList<BlockPos> CalculatePath (Level world, BlockPos startBlock, BlockPos destBlock, int blockBufferAmount)
 	{
 		ArrayList<BlockPos> path = new ArrayList<BlockPos>();
-		ArrayList<BlockPos> blocksToAvoid = new ArrayList<BlockPos>();
 		BlockPos currentBlock = startBlock;
 		BlockPos goalBlock = destBlock;
-
-//		blocksToAvoid.add(startBlock);
-//		blocksToAvoid.add(destBlock);
 
 		// add blocks along path
 		int distanceToDestinationBlock = startBlock.distManhattan(goalBlock);
@@ -28,7 +24,7 @@ public class WirePathCalculator
 
 		ArrayList<Node> openList = new ArrayList<Node>();
 		ArrayList<Node> closedList = new ArrayList<Node>();
-		openList.add(new Node(currentBlock, calculateScore(world, currentBlock, goalBlock, false), null));
+		openList.add(new Node(currentBlock, calculateScore(world, currentBlock, goalBlock, false, blockBufferAmount), null));
 
 		while (openList.size() > 0 &&
 				iterations < MAX_SEARCH &&
@@ -37,12 +33,7 @@ public class WirePathCalculator
 			Collections.sort(openList);
 			Node curNode = openList.get(0);
 
-			ArrayList<Long> exploredBlocks = new ArrayList<Long>();
-
-			for (BlockPos b : blocksToAvoid)
-			{
-				exploredBlocks.add(b.asLong());
-			}
+			Set<Long> exploredBlocks = new HashSet<Long>();
 
 			for (Node n : closedList)
 			{
@@ -59,7 +50,8 @@ public class WirePathCalculator
 			{
 				for (int xoff = -1; xoff <= 1; xoff++)
 				{
-					if ((Math.abs(zoff) == 1 && Math.abs(xoff) == 1))
+					boolean isDiagnal = Math.abs(zoff) == 1 && Math.abs(xoff) == 1;
+					if (isDiagnal)
 					{
 						continue;
 					}
@@ -69,8 +61,7 @@ public class WirePathCalculator
 					// avoid adding already processed nodes
 					if (!exploredBlocks.contains(neighborBlock.asLong()))
 					{
-						boolean isDiagnal = (Math.abs(zoff) == 1 && Math.abs(xoff) == 1);
-						double curScore = calculateScore(world, neighborBlock, goalBlock, isDiagnal);
+						double curScore = calculateScore(world, neighborBlock, goalBlock, isDiagnal, blockBufferAmount);
 						Node neighborNode = new Node(neighborBlock, curScore, curNode);
 						openList.add(neighborNode);
 						exploredBlocks.add(neighborNode.block.asLong());
@@ -79,12 +70,12 @@ public class WirePathCalculator
 				}
 			}
 
-			// check the block above and below the starting block aswell
+			// check the block above and below the starting block as well
 			BlockPos aboveBlock = curNode.block.above();
 
 			if (!exploredBlocks.contains(aboveBlock.asLong()))
 			{
-				double aboveBlockScore = calculateScore(world, aboveBlock, goalBlock, false);
+				double aboveBlockScore = calculateScore(world, aboveBlock, goalBlock, false, blockBufferAmount);
 				Node aboveNode = new Node(aboveBlock, aboveBlockScore, curNode);
 				openList.add(aboveNode);
 			}
@@ -93,7 +84,7 @@ public class WirePathCalculator
 
 			if (!exploredBlocks.contains(belowBlock.asLong()))
 			{
-				double belowBlockScore = calculateScore(world, belowBlock, goalBlock, false);
+				double belowBlockScore = calculateScore(world, belowBlock, goalBlock, false, blockBufferAmount);
 				Node belowNode = new Node(belowBlock, belowBlockScore, curNode);
 				openList.add(belowNode);
 			}
@@ -123,7 +114,7 @@ public class WirePathCalculator
 	}
 
 
-	public double calculateScore (Level world, BlockPos block, BlockPos destination, boolean isDiagnal)
+	public double calculateScore (Level world, BlockPos block, BlockPos destination, boolean isDiagnal, int blockBufferAmount)
 	{
 
 		double distanceToDestination = block.distManhattan(destination);
@@ -137,33 +128,44 @@ public class WirePathCalculator
 		BlockState belowState = world.getBlockState(belowBlock);
 
 		boolean currentBlockIsAir = currentBlockState.isAir();
-		boolean blockOnSurface = aboveState.isAir() || belowState.isAir();
+		boolean blockOnSurface = false;
 
 		double score = -distanceToDestination;
+		List<Direction> directions = Arrays.asList(Direction.UP, Direction.DOWN, Direction.EAST, Direction.WEST, Direction.NORTH, Direction.SOUTH);
 
-		for (int zoff = -1; zoff <= 1; zoff++)
+		int distanceToCheckForAir = blockBufferAmount*2;
+		int shortestDistanceToAir = distanceToCheckForAir;
+		Direction directionClosestToAir;
+
+		for (Direction direction : directions)
 		{
-			if (blockOnSurface)
+			for (int offset = 1; offset <= distanceToCheckForAir; offset++)
 			{
-				break;
-			}
+				if (offset >= shortestDistanceToAir) { break; }
 
-			for (int xoff = -1; xoff <= 1; xoff++)
-			{
-				if ((Math.abs(zoff) == 1 && Math.abs(xoff) == 1))
+				BlockPos curBlock = block.relative(direction, offset);
+				BlockState curBlockState = world.getBlockState(curBlock);
+
+				if (curBlockState.isAir() && offset < shortestDistanceToAir)
 				{
-					continue;
+					shortestDistanceToAir = offset;
+					directionClosestToAir = direction;
+					break;
 				}
-
-				BlockPos neighborBlock = block.offset(xoff, 0, zoff);
-				BlockState neighborBlockState = world.getBlockState(neighborBlock);
-				blockOnSurface = neighborBlockState.isAir();
 			}
 		}
 
-		if (blockOnSurface)
+		if (shortestDistanceToAir < blockBufferAmount)
 		{
-			score -= 6;
+			score -= (blockBufferAmount - shortestDistanceToAir)*3;
+		}
+		else if (shortestDistanceToAir > blockBufferAmount)
+		{
+			score -= (shortestDistanceToAir - blockBufferAmount)*3;
+		}
+		else
+		{
+			score += 4;
 		}
 
 		if (currentBlockIsAir)

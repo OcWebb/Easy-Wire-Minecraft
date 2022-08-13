@@ -1,6 +1,4 @@
 package com.webb.easywiring.common.util;
-import java.util.ArrayList;
-import java.util.Comparator;
 
 import net.minecraft.core.BlockPos;
 
