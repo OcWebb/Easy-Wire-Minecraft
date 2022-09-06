@@ -9,9 +9,9 @@ public class Pathfinder
 {
 	private static WirePathCalculator wirePathCalculator = new WirePathCalculator();
 
-	public static ArrayList<BlockPos> GetWirePath (Level world, BlockPos startBlock, BlockPos destBlock)
+	public static Path GetWirePath (Level world, BlockPos startBlock, BlockPos destBlock)
 	{
-		ArrayList<BlockPos> path = wirePathCalculator.CalculatePath(world, startBlock, destBlock, 3);
+		Path path = wirePathCalculator.CalculatePath(world, startBlock, destBlock, 3);
 
 		return path;
 	}

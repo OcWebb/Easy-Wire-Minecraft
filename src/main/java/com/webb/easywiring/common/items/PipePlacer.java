@@ -3,6 +3,7 @@ package com.webb.easywiring.common.items;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.webb.easywiring.common.util.Path;
 import com.webb.easywiring.common.util.Pathfinder;
 
 import net.minecraft.world.item.TooltipFlag;
@@ -23,7 +24,7 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 public class PipePlacer extends Item
 {
 	public static ArrayList<BlockPos> machines = new ArrayList<BlockPos>();
-	public static ArrayList<BlockPos> currentPath = new ArrayList<BlockPos>();
+	public static Path currentPath = new Path();
 	public int distDown = 2;
 
 	public PipePlacer(Properties properties)
@@ -82,21 +83,14 @@ public class PipePlacer extends Item
 		if (!world.isClientSide)
 		{
 			// route between blocks
-			ArrayList<BlockPos> path = Pathfinder.GetWirePath(world, machines.get(0), machines.get(1));
+			Path path = Pathfinder.GetWirePath(world, machines.get(0), machines.get(1));
 			currentPath = path;
 
 			System.out.println("Path returned: " + path.size());
 
 			if (!path.isEmpty())
 			{
-				for (BlockPos curBlock : path)
-				{
-//					world.removeBlock(curBlock, false);
-//					world.setBlock(curBlock, Blocks.REDSTONE_BLOCK.getStateForPlacement(null), Constants.BlockFlags.DEFAULT);
-
-				}
-
-//				machines.clear();
+				
 			}
 			else
 			{

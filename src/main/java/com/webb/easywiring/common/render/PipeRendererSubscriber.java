@@ -1,6 +1,7 @@
 package com.webb.easywiring.common.render;
 
 import com.mojang.math.Vector3f;
+import com.webb.easywiring.common.util.Node;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.debug.DebugRenderer;
 import net.minecraft.core.Vec3i;
@@ -63,29 +64,47 @@ public class PipeRendererSubscriber
         Vec3 cam = Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
         stack.translate(-cam.x(), -cam.y(), -cam.z());
 
-        ArrayList<BlockPos> nodesSortedByDistance = sortBlocksByDistanceToPlayer(player, PipePlacer.currentPath);
+        ArrayList<Node> nodesSortedByDistance = sortBlocksByDistanceToPlayer(player, PipePlacer.currentPath.getNodes());
 
-        for (BlockPos node : nodesSortedByDistance)
+        for (Node node : nodesSortedByDistance)
         {
             renderBlockOutline(buffer, stack,
-                    node, 200, 200, 200, 1);
+                    node.blockPos, 200, 200, 200, 1);
 
             boolean isCloseEnough = nodesSortedByDistance.indexOf(node) >= nodesSortedByDistance.size() - 4;
             if (player.isCrouching() && isCloseEnough || true)
             {
-//                renderNodeDepthLine(buffer, stack,
-//                        node, 0.02f, 40, 230, 20, 1);
+                renderNodeDepthLine(buffer, stack,
+                        node, 0.02f, 40, 230, 20, 1);
 
                 stack.pushPose();
+                BlockPos closestAirBlockPosition = node.blockPos.relative(node.directionToAir, node.distanceToAir);
 
-                stack.translate(node.getX()+0.5, node.getY()+1.02, node.getZ()+0.5);
+
                 stack.scale(0.04f, 0.04f, 0.04f);
-                stack.mulPose(Vector3f.XP.rotationDegrees(90));
+                switch (node.directionToAir)
+                {
+                    case UP:
+                        stack.translate(closestAirBlockPosition.getX()+0.5, closestAirBlockPosition.getY()+1.02, closestAirBlockPosition.getZ()+0.5);
+                        stack.mulPose(Vector3f.XP.rotationDegrees(90));
+                        break;
+                    case DOWN:
+                        stack.translate(closestAirBlockPosition.getX()+0.5, closestAirBlockPosition.getY()-0.02, closestAirBlockPosition.getZ()+0.5);
+                        stack.mulPose(Vector3f.XP.rotationDegrees(-90));
+                        break;
+                    case NORTH:
+                        stack.translate(closestAirBlockPosition.getX()+0.5, closestAirBlockPosition.getY()+0.5, closestAirBlockPosition.getZ()-0.02);
+                        break;
+                        //stack.mulPose(Vector3f.XP.rotationDegrees(-90));
+                    case SOUTH:
+                        stack.translate(closestAirBlockPosition.getX()+0.5, closestAirBlockPosition.getY()+0.5, closestAirBlockPosition.getZ()-1.02);
+                        stack.mulPose(Vector3f.XP.rotationDegrees(-180));
+                        break;
+                }
+                System.out.println(node.directionToAir.toString() + ", " + nodesSortedByDistance.indexOf(node));
 
                 RenderSystem.disableDepthTest();
-                Minecraft.getInstance().font.draw(stack, nodesSortedByDistance.indexOf(node)+"", 0, 0, TEXT_COLOR);
-//                DebugRenderer.renderFloatingText(nodesSortedByDistance.indexOf(node)+"", node.getX()+0.5, node.getY()+1.02, node.getZ()+0.5, TEXT_COLOR, 0.02f, true, 0.0F, true);
-//                RenderSystem.disableDepthTest();
+                Minecraft.getInstance().font.draw(stack, node.directionToAir.toString(), 0, 0, TEXT_COLOR);
 
                 stack.popPose();
             }
@@ -101,19 +120,19 @@ public class PipeRendererSubscriber
         RenderSystem.enableDepthTest();
     }
 
-    private static ArrayList<BlockPos> sortBlocksByDistanceToPlayer(LocalPlayer player, ArrayList<BlockPos> unsortedList)
+    private static ArrayList<Node> sortBlocksByDistanceToPlayer(LocalPlayer player, ArrayList<Node> unsortedList)
     {
-        ArrayList<BlockPos> sortedList = new ArrayList<BlockPos>();
+        ArrayList<Node> sortedList = new ArrayList<Node>();
         sortedList.addAll(unsortedList);
         Vec3 playerPos = player.position();
         Vec3i intPlayerPos = new Vec3i(playerPos.x, playerPos.y+1, playerPos.z);
 
-        Collections.sort(sortedList, new Comparator<BlockPos>() {
+        Collections.sort(sortedList, new Comparator<Node>() {
             @Override
-            public int compare(BlockPos first, BlockPos second)
+            public int compare(Node first, Node second)
             {
-                double firstDistance = first.distSqr(intPlayerPos);
-                double secondDistance = second.distSqr(intPlayerPos);
+                double firstDistance = first.blockPos.distSqr(intPlayerPos);
+                double secondDistance = second.blockPos.distSqr(intPlayerPos);
 
                 // -1 - less than, 1 - greater than, 0 - equal, all inversed for descending
                 return firstDistance > secondDistance ? -1 : (firstDistance < secondDistance) ? 1 : 0;
@@ -124,48 +143,28 @@ public class PipeRendererSubscriber
     }
 
 
-    private static void renderNodeDepthLine(MultiBufferSource.BufferSource buffer, PoseStack mstack, BlockPos block, float lineWidth, int r, int g, int b, int a)
+    private static void renderNodeDepthLine(MultiBufferSource.BufferSource buffer, PoseStack mstack, Node node, float lineWidth, int r, int g, int b, int a)
     {
         ArrayList<BlockPos> blocksToSurface = new ArrayList<BlockPos>();
         Level world = Minecraft.getInstance().level;
 
-        int i = 0;
-        int max = 10;
-        boolean success = false;
-
-        while (i++ < max)
+        if (node.distanceToAir > 0)
         {
-            BlockPos ithBlockAbove = block.offset(0, i, 0);
-            BlockState blockState = world.getBlockState(ithBlockAbove);
-
-            if (blockState.isAir())
+            for (int i = 1; i < node.distanceToAir; i++)
             {
-                success = true;
-                break;
-            }
-            blocksToSurface.add(ithBlockAbove);
-        }
-
-        if (success)
-        {
-            int blockCount = blocksToSurface.size();
-
-            for (int j = 0; j < blockCount; j++)
-            {
-                BlockPos currentBlock = blocksToSurface.get(j);
+                BlockPos ithBlockAbove = node.blockPos.relative(node.directionToAir, i);
 
                 float crosslineWidth = 0.25f;
 
-                if (j == blockCount-1)
+                if (i == node.distanceToAir-1)
                 {
                     crosslineWidth = 0.85f;
                 }
 
                 renderDepthLine(buffer, mstack,
-                        currentBlock, lineWidth, crosslineWidth, r, g, b, a);
+                        ithBlockAbove, lineWidth, crosslineWidth, r, g, b, a);
             }
         }
-
     }
 
     private static void renderDepthLine(MultiBufferSource.BufferSource buffer, PoseStack mstack, BlockPos block, float lineWidth, float crosslineWidth, int r, int g, int b, int a)
