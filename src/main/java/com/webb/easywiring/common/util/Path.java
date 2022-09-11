@@ -1,6 +1,9 @@
 package com.webb.easywiring.common.util;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.world.level.Level;
 
 import java.util.ArrayList;
 
@@ -41,14 +44,32 @@ public class Path
         return blockPosArray;
     }
 
-    public void addNodeHead (Node node)
+    public boolean addNodeHead (Node node, Direction direction)
     {
+        Node headNode = nodes.get(0);
+        BlockPos newBlock = headNode.blockPos.relative(direction);
+
+        if (newBlock.asLong() != node.blockPos.asLong())
+        {
+            return false;
+        }
+
         addNode(0, node);
+        return true;
     }
 
-    public void addNodeTail (Node node)
+    public boolean addNodeTail (Node node, Direction direction)
     {
-        addNode(nodes.size()-1, node);
+        Node tailNode = nodes.get(nodes.size()-1);
+        BlockPos newBlock = tailNode.blockPos.relative(direction);
+
+        if (newBlock.asLong() != node.blockPos.asLong())
+        {
+            return false;
+        }
+
+        addNode(0, node);
+        return true;
     }
 
     public void addNode(int position, Node node)
@@ -84,6 +105,15 @@ public class Path
         }
 
         return true;
+    }
+
+    public void returnPathToPreviousBlockState()
+    {
+        Level world = Minecraft.getInstance().level;
+        for (Node node : nodes)
+        {
+            world.setBlock(node.blockPos, node.replacedBlockState, 1);
+        }
     }
 
 }
