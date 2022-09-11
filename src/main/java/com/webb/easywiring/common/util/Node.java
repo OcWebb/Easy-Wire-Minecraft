@@ -5,6 +5,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -16,6 +17,8 @@ public class Node implements Comparable<Node>
 	public Direction directionFromParent;
 	public Direction directionToAir;
 	public int distanceToAir;
+
+	public ArrayList<String> debugInformation;
 
 	public BlockState replacedBlockState;
 
@@ -30,9 +33,10 @@ public class Node implements Comparable<Node>
 		distanceToAir = DistanceToAir;
 		directionToAir = DirectionToAir;
 		replacedBlockState = world.getBlockState(blockPos);
+		debugInformation = new ArrayList<String>();
 	}
 
-	Direction getDirectionToParent()
+	public Direction getDirectionToParent()
 	{
 		List<Direction> directions = Arrays.asList(Direction.UP, Direction.DOWN, Direction.EAST, Direction.WEST, Direction.NORTH, Direction.SOUTH);
 		for (Direction direction : directions)
@@ -46,6 +50,10 @@ public class Node implements Comparable<Node>
 		return null;
 	}
 
+	public void addDebugInformation(String info)
+	{
+		debugInformation.add(info);
+	}
 
 	@Override
 	public int compareTo(Node b)

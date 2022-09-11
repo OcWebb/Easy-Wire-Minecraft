@@ -1,5 +1,6 @@
 package com.webb.easywiring.common.util;
 
+import java.awt.geom.IllegalPathStateException;
 import java.util.*;
 
 import net.minecraft.core.Direction;
@@ -9,7 +10,7 @@ import net.minecraft.world.level.Level;
 
 public class WirePathCalculator
 {
-	static int MAX_SEARCH = 2500;
+	static int MAX_SEARCH = 3000;
 
 	public Path CalculatePath (Level world, BlockPos startBlock, BlockPos destBlock, int blockBufferAmount)
 	{
@@ -101,12 +102,16 @@ public class WirePathCalculator
 		{
 			Collections.sort(closedList);
 			Node curNode = closedList.get(0);
-			path.addNodeHead(curNode);
+			path.addNode(0, curNode);
 
 			while (curNode.parent != null)
 			{
 				curNode = curNode.parent;
-				path.addNodeHead(curNode);
+				boolean success = path.addNodeHead(curNode, curNode.directionFromParent);
+				if (!success)
+				{
+					throw new IllegalPathStateException("Attempted to insert node which would result in non-continuous path");
+				}
 			}
 		}
 

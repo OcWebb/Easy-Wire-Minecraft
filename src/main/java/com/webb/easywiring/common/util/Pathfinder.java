@@ -11,7 +11,16 @@ public class Pathfinder
 
 	public static Path GetWirePath (Level world, BlockPos startBlock, BlockPos destBlock)
 	{
-		Path path = wirePathCalculator.CalculatePath(world, startBlock, destBlock, 3);
+		Path path = new Path();
+
+		try
+		{
+			path = wirePathCalculator.CalculatePath(world, startBlock, destBlock, 3);
+		}
+		catch (Exception e)
+		{
+			System.out.println(e);
+		}
 
 		return path;
 	}
