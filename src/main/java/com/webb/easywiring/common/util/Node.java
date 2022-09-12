@@ -14,7 +14,7 @@ public class Node implements Comparable<Node>
 	public BlockPos blockPos;
 	public double score;
 	public Node parent;
-	public Direction directionFromParent;
+	public Direction directionToParent;
 	public Direction directionToAir;
 	public int distanceToAir;
 
@@ -29,7 +29,7 @@ public class Node implements Comparable<Node>
 		blockPos = BlockPos;
 		score = scoreIn;
 		parent = Parent;
-		directionFromParent = getDirectionToParent();
+		directionToParent = getDirectionToParent();
 		distanceToAir = DistanceToAir;
 		directionToAir = DirectionToAir;
 		replacedBlockState = world.getBlockState(blockPos);
@@ -53,6 +53,20 @@ public class Node implements Comparable<Node>
 	public void addDebugInformation(String info)
 	{
 		debugInformation.add(info);
+	}
+
+	@Override
+	public String toString() {
+		return "Node{" +
+				"blockPos=" + blockPos +
+				", score=" + score +
+				", parent=" + (parent!=null ? parent.blockPos.toString() : "none") +
+				", directionFromParent=" + directionToParent +
+				", directionToAir=" + directionToAir +
+				", distanceToAir=" + distanceToAir +
+				", debugInformation=" + debugInformation +
+				", replacedBlockState=" + replacedBlockState +
+				'}';
 	}
 
 	@Override

@@ -2,12 +2,10 @@ package com.webb.easywiring.common.render;
 
 import com.mojang.math.Vector3f;
 import com.webb.easywiring.common.util.Node;
-import net.minecraft.client.gui.Font;
-import net.minecraft.client.renderer.debug.DebugRenderer;
+import net.minecraft.core.Direction;
 import net.minecraft.core.Vec3i;
 import net.minecraft.util.FastColor;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.client.event.RenderLevelStageEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
@@ -66,54 +64,70 @@ public class PipeRendererSubscriber
 
         ArrayList<Node> nodesSortedByDistance = sortBlocksByDistanceToPlayer(player, PipePlacer.currentPath.getNodes());
 
+        float LINE_SPACEING = 0.3F;
         for (Node node : nodesSortedByDistance)
         {
             renderBlockOutline(buffer, stack,
                     node.blockPos, 200, 200, 200, 1);
 
-            boolean isCloseEnough = nodesSortedByDistance.indexOf(node) >= nodesSortedByDistance.size() - 4;
-            if (player.isCrouching() && isCloseEnough || true)
+            boolean isCloseEnough = nodesSortedByDistance.indexOf(node) >= nodesSortedByDistance.size() - 12;
+            if (isCloseEnough) //player.isCrouching() &&
             {
-                renderNodeDepthLine(buffer, stack,
-                        node, 0.02f, 40, 230, 20, 1);
+                renderNodesDepth(buffer, stack,
+                        node, 0.05f, 40, 230, 20, 1);
 
-                stack.pushPose();
-                BlockPos closestAirBlockPosition = node.blockPos.relative(node.directionToAir, node.distanceToAir);
-
-
-                stack.scale(0.04f, 0.04f, 0.04f);
-                switch (node.directionToAir)
+                if (node.directionToAir != null)
                 {
-                    case UP:
-                        stack.translate(closestAirBlockPosition.getX()+0.5, closestAirBlockPosition.getY()+1.02, closestAirBlockPosition.getZ()+0.5);
-                        stack.mulPose(Vector3f.XP.rotationDegrees(90));
-                        break;
-                    case DOWN:
-                        stack.translate(closestAirBlockPosition.getX()+0.5, closestAirBlockPosition.getY()-0.02, closestAirBlockPosition.getZ()+0.5);
-                        stack.mulPose(Vector3f.XP.rotationDegrees(-90));
-                        break;
-                    case NORTH:
-                        stack.translate(closestAirBlockPosition.getX()+0.5, closestAirBlockPosition.getY()+0.5, closestAirBlockPosition.getZ()-0.02);
-                        break;
-                        //stack.mulPose(Vector3f.XP.rotationDegrees(-90));
-                    case SOUTH:
-                        stack.translate(closestAirBlockPosition.getX()+0.5, closestAirBlockPosition.getY()+0.5, closestAirBlockPosition.getZ()-1.02);
-                        stack.mulPose(Vector3f.XP.rotationDegrees(-180));
-                        break;
+                    stack.pushPose();
+
+                    BlockPos closestAirBlockPosition = node.blockPos.relative(node.directionToAir, node.distanceToAir);
+
+                    moveToBlockFace(stack, closestAirBlockPosition, node.directionToAir);
+                    stack.translate(-0.43, -0.49, -0.5 + LINE_SPACEING);
+                    stack.scale(0.01f, 0.01f, 0.01f);
+                    stack.mulPose(Vector3f.XP.rotationDegrees(90));
+
+                    for (int i = 0; i < node.debugInformation.size(); i++)
+                    {
+                        String debugMessage = node.debugInformation.get(i);
+                        System.out.println(debugMessage);
+                        stack.translate(0, 6*i, 0);
+                        Minecraft.getInstance().font.draw(stack, debugMessage, 0, 0, TEXT_COLOR);
+                    }
+
+                    stack.popPose();
                 }
-                System.out.println(node.directionToAir.toString() + ", " + nodesSortedByDistance.indexOf(node));
 
-                RenderSystem.disableDepthTest();
-                Minecraft.getInstance().font.draw(stack, node.directionToAir.toString(), 0, 0, TEXT_COLOR);
 
-                stack.popPose();
+
             }
         }
+
 
         for (BlockPos machine : PipePlacer.machines)
         {
             renderBlockOutline(buffer, stack,
                     machine, 240, 20, 20, 1);
+
+            stack.pushPose();
+            moveToBlockFace(stack, machine, Direction.UP);
+            stack.translate(-0.43, 0.51, -0.5 + LINE_SPACEING);
+            stack.scale(0.01f, 0.01f, 0.01f);
+            stack.mulPose(Vector3f.XP.rotationDegrees(90));
+
+            // line 2
+            stack.pushPose();
+            stack.translate(0, 0, LINE_SPACEING*3);
+            Minecraft.getInstance().font.draw(stack, "A machine that", 0, 0, TEXT_COLOR);
+            stack.popPose();
+
+            // line 3
+            stack.pushPose();
+            stack.translate(0, 0, LINE_SPACEING*6);
+            Minecraft.getInstance().font.draw(stack, "needs power?", 0, 9, TEXT_COLOR);
+            stack.popPose();
+
+            stack.popPose();
         }
 
         stack.popPose();
@@ -143,31 +157,47 @@ public class PipeRendererSubscriber
     }
 
 
-    private static void renderNodeDepthLine(MultiBufferSource.BufferSource buffer, PoseStack mstack, Node node, float lineWidth, int r, int g, int b, int a)
+    private static void renderNodesDepth(MultiBufferSource.BufferSource buffer, PoseStack mstack, Node node, float lineWidth, int r, int g, int b, int a)
     {
         ArrayList<BlockPos> blocksToSurface = new ArrayList<BlockPos>();
         Level world = Minecraft.getInstance().level;
 
-        if (node.distanceToAir > 0)
+        if (node.distanceToAir > 0 && node.directionToAir != null)
         {
+            mstack.pushPose();
+
+            float colorDarkenPercent = 0.1F;
+
             for (int i = 1; i < node.distanceToAir; i++)
             {
-                BlockPos ithBlockAbove = node.blockPos.relative(node.directionToAir, i);
-
+                BlockPos currentBlock = node.blockPos.relative(node.directionToAir, i);
                 float crosslineWidth = 0.25f;
 
-                if (i == node.distanceToAir-1)
+                if (i == 1)
                 {
                     crosslineWidth = 0.85f;
                 }
 
+                int red = (int) Math.floor(r*(1-colorDarkenPercent*i));
+                int green = (int) Math.floor(g*(1-colorDarkenPercent*i));
+                int blue = (int) Math.floor(b*(1-colorDarkenPercent*i));
+
                 renderDepthLine(buffer, mstack,
-                        ithBlockAbove, lineWidth, crosslineWidth, r, g, b, a);
+                        currentBlock, node.directionToAir, lineWidth, crosslineWidth, red, green, blue, a);
+
+                mstack.pushPose();
+                mstack.mulPose(Vector3f.YP.rotationDegrees(90));
+                renderDepthLine(buffer, mstack,
+                        currentBlock, node.directionToAir, lineWidth, crosslineWidth, red, green, blue, a);
+                mstack.popPose();
+
+
             }
+            mstack.popPose();
         }
     }
 
-    private static void renderDepthLine(MultiBufferSource.BufferSource buffer, PoseStack mstack, BlockPos block, float lineWidth, float crosslineWidth, int r, int g, int b, int a)
+    private static void renderDepthLine(MultiBufferSource.BufferSource buffer, PoseStack stack, BlockPos block, Direction direction, float lineWidth, float crosslineWidth, int r, int g, int b, int a)
     {
         VertexConsumer builder = buffer.getBuffer(CustomRenderTypes.overlayLines());
 
@@ -175,36 +205,55 @@ public class PipeRendererSubscriber
         int y = block.getY();
         int z = block.getZ();
 
-        mstack.pushPose();
+        stack.pushPose();
 
-        mstack.translate(x+0.5, y, z+0.5);
-        Matrix4f matrix = mstack.last().pose();
+        moveToBlockFace(stack, block, direction);
 
-        builder.vertex(matrix, 0, 0, 0).color(r, g, b, a).uv2(LIGHT_FULLBRIGHT).endVertex();
-        builder.vertex(matrix, 0, 1, 0).color(r, g, b, a).uv2(LIGHT_FULLBRIGHT).endVertex();
+        Matrix4f matrix = stack.last().pose();
+
+        builder.vertex(matrix, 0, -0.5F, 0).color(r, g, b, a).uv2(LIGHT_FULLBRIGHT).endVertex();
+        builder.vertex(matrix, 0, 0.5F, 0).color(r, g, b, a).uv2(LIGHT_FULLBRIGHT).endVertex();
 
         // top cross
         float crosslineHalfWidth = crosslineWidth/2;
-        builder.vertex(matrix, -crosslineHalfWidth, 1, 0).color(r, g, b, a).uv2(LIGHT_FULLBRIGHT).endVertex();
-        builder.vertex(matrix, crosslineHalfWidth, 1, 0).color(r, g, b, a).uv2(LIGHT_FULLBRIGHT).endVertex();
+        builder.vertex(matrix, -crosslineHalfWidth, 0.5F, 0).color(r, g, b, a).uv2(LIGHT_FULLBRIGHT).endVertex();
+        builder.vertex(matrix, crosslineHalfWidth, 0.5F, 0).color(r, g, b, a).uv2(LIGHT_FULLBRIGHT).endVertex();
 
-        builder.vertex(matrix, -crosslineHalfWidth, 0, 1).color(r, g, b, a).uv2(LIGHT_FULLBRIGHT).endVertex();
-        builder.vertex(matrix, crosslineHalfWidth, 0, 1).color(r, g, b, a).uv2(LIGHT_FULLBRIGHT).endVertex();
+        // bottom cross
+        builder.vertex(matrix, -crosslineHalfWidth, -0.5F, 0).color(r, g, b, a).uv2(LIGHT_FULLBRIGHT).endVertex();
+        builder.vertex(matrix, crosslineHalfWidth, -0.5F, 0).color(r, g, b, a).uv2(LIGHT_FULLBRIGHT).endVertex();
 
-        mstack.popPose();
+        stack.popPose();
 
         buffer.endBatch(CustomRenderTypes.overlayLines());
     }
 
-    private static void renderText(MultiBufferSource.BufferSource buffer, PoseStack mstack, BlockPos block, String text, int r, int g, int b, int a)
+    private static void moveToBlockFace(PoseStack stack, BlockPos blockPos, Direction direction)
     {
-//        MultiBufferSource.BufferSource irendertypebuffer = MultiBufferSource.immediate(Tesselator.getInstance().getBuilder());
-//
-//        int i = Font.drawInBatch(p_228078_1_, p_228078_2_, p_228078_3_, p_228078_4_, p_228078_6_, p_228078_5_,
-//                irendertypebuffer, false, 0, LightTexture.FULL_BRIGHT);
-//        irendertypebuffer.endBatch();
-    }
+        stack.translate(blockPos.getX()+0.5, blockPos.getY()+0.5, blockPos.getZ()+0.5);
+        switch (direction)
+        {
+            case UP:
+                break;
 
+            case DOWN:
+                stack.mulPose(Vector3f.XP.rotationDegrees(-180));
+                break;
+
+            case NORTH:
+                stack.mulPose(Vector3f.XP.rotationDegrees(-90));
+            case SOUTH:
+                stack.mulPose(Vector3f.XP.rotationDegrees(90));
+                break;
+
+            case EAST:
+                stack.mulPose(Vector3f.ZP.rotationDegrees(-90));
+            case WEST:
+                stack.mulPose(Vector3f.ZP.rotationDegrees(90));
+                stack.mulPose(Vector3f.YP.rotationDegrees(-90));
+                break;
+        }
+    }
 
     private static void renderBlockOutline(MultiBufferSource.BufferSource buffer, PoseStack mstack, BlockPos block, int r, int g, int b, int a)
     {

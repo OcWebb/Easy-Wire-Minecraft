@@ -24,6 +24,7 @@ public class WirePathCalculator
 
 		ArrayList<Node> openList = new ArrayList<Node>();
 		ArrayList<Node> closedList = new ArrayList<Node>();
+		Node finalNode = null;
 		openList.add(generateNode(world, currentBlock, goalBlock, false, blockBufferAmount));
 
 		while (openList.size() > 0 &&
@@ -61,8 +62,7 @@ public class WirePathCalculator
 					// avoid adding already processed nodes
 					if (!exploredBlocks.contains(neighborBlock.asLong()))
 					{
-						Node neighborNode = generateNode(world, neighborBlock,  goalBlock, false, blockBufferAmount);
-						neighborNode.parent = curNode;
+						Node neighborNode = generateNode(world, neighborBlock,  goalBlock, false, blockBufferAmount, curNode);
 						openList.add(neighborNode);
 						exploredBlocks.add(neighborNode.blockPos.asLong());
 					}
@@ -75,8 +75,8 @@ public class WirePathCalculator
 
 			if (!exploredBlocks.contains(aboveBlock.asLong()))
 			{
-				Node aboveNode = generateNode(world, aboveBlock, goalBlock, false, blockBufferAmount);
-				aboveNode.parent = curNode;
+				Node aboveNode = generateNode(world, aboveBlock, goalBlock, false, blockBufferAmount, curNode);
+
 				openList.add(aboveNode);
 			}
 
@@ -84,8 +84,7 @@ public class WirePathCalculator
 
 			if (!exploredBlocks.contains(belowBlock.asLong()))
 			{
-				Node belowNode = generateNode(world, belowBlock, goalBlock, false, blockBufferAmount);
-				belowNode.parent = curNode;
+				Node belowNode = generateNode(world, belowBlock, goalBlock, false, blockBufferAmount, curNode);
 				openList.add(belowNode);
 			}
 
@@ -96,18 +95,24 @@ public class WirePathCalculator
 
 			iterations++;
 			distanceToDestinationBlock = curNode.blockPos.distManhattan(goalBlock);
+			if (distanceToDestinationBlock <= 1)
+			{
+				finalNode = curNode;
+				break;
+			}
 		}
 
-		if (distanceToDestinationBlock <= 1)
+		if (finalNode != null)
 		{
-			Collections.sort(closedList);
-			Node curNode = closedList.get(0);
+			Node curNode = finalNode;
 			path.addNode(0, curNode);
 
 			while (curNode.parent != null)
 			{
+				Direction direction = invertDirection(curNode.directionToParent);
+
 				curNode = curNode.parent;
-				boolean success = path.addNodeHead(curNode, curNode.directionFromParent);
+				boolean success = path.addNodeHead(curNode, direction);
 				if (!success)
 				{
 					throw new IllegalPathStateException("Attempted to insert node which would result in non-continuous path");
@@ -118,8 +123,12 @@ public class WirePathCalculator
 		return path;
 	}
 
-
 	public Node generateNode (Level world, BlockPos block, BlockPos destination, boolean isDiagnal, int blockBufferAmount)
+	{
+		return generateNode(world, block, destination, isDiagnal, blockBufferAmount, null);
+	}
+
+	public Node generateNode (Level world, BlockPos block, BlockPos destination, boolean isDiagnal, int blockBufferAmount, Node parent)
 	{
 
 		double distanceToDestination = block.distManhattan(destination);
@@ -151,7 +160,7 @@ public class WirePathCalculator
 				BlockPos curBlock = block.relative(direction, offset);
 				BlockState curBlockState = world.getBlockState(curBlock);
 
-				if (curBlockState.isAir() && offset < shortestDistanceToAir)
+				if (curBlockState.isAir())
 				{
 					shortestDistanceToAir = offset;
 					directionClosestToAir = direction;
@@ -183,7 +192,28 @@ public class WirePathCalculator
 			score += 0.5;
 		}
 
-		return new Node(block, score, null, directionClosestToAir, shortestDistanceToAir);
+		Node newNode = new Node(block, score, parent, directionClosestToAir, shortestDistanceToAir);
+
+		newNode.addDebugInformation("score: " + score);
+		newNode.addDebugInformation("distanceToGoal: " + distanceToDestination);
+		newNode.addDebugInformation("airDirection: " + directionClosestToAir);
+
+		return newNode;
+	}
+
+	public Direction invertDirection (Direction inputDirection)
+	{
+		switch (inputDirection)
+		{
+			case UP: return Direction.DOWN;
+			case DOWN: return Direction.UP;
+			case NORTH: return Direction.SOUTH;
+			case SOUTH: return Direction.NORTH;
+			case EAST: return Direction.WEST;
+			case WEST: return Direction.EAST;
+
+			default: return null;
+		}
 	}
 
 }

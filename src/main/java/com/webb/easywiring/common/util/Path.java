@@ -46,8 +46,14 @@ public class Path
 
     public boolean addNodeHead (Node node, Direction direction)
     {
-        Node headNode = nodes.get(0);
+        Node headNode = getHead();
+
         BlockPos newBlock = headNode.blockPos.relative(direction);
+
+//        System.out.println("head node: " + newBlock.getX() + ", " + newBlock.getY() + ", " + newBlock.getZ());
+//        System.out.println(direction);
+//        System.out.println("expected block: " + newBlock.getX() + ", " + newBlock.getY() + ", " + newBlock.getZ());
+//        System.out.println("provided block: " + node.blockPos.getX() + ", " + node.blockPos.getY() + ", " + node.blockPos.getZ());
 
         if (newBlock.asLong() != node.blockPos.asLong())
         {
@@ -60,7 +66,7 @@ public class Path
 
     public boolean addNodeTail (Node node, Direction direction)
     {
-        Node tailNode = nodes.get(nodes.size()-1);
+        Node tailNode = getTail();
         BlockPos newBlock = tailNode.blockPos.relative(direction);
 
         if (newBlock.asLong() != node.blockPos.asLong())
