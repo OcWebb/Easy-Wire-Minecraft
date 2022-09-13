@@ -50,11 +50,6 @@ public class Path
 
         BlockPos newBlock = headNode.blockPos.relative(direction);
 
-//        System.out.println("head node: " + newBlock.getX() + ", " + newBlock.getY() + ", " + newBlock.getZ());
-//        System.out.println(direction);
-//        System.out.println("expected block: " + newBlock.getX() + ", " + newBlock.getY() + ", " + newBlock.getZ());
-//        System.out.println("provided block: " + node.blockPos.getX() + ", " + node.blockPos.getY() + ", " + node.blockPos.getZ());
-
         if (newBlock.asLong() != node.blockPos.asLong())
         {
             return false;

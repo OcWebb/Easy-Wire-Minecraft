@@ -6,15 +6,20 @@ import com.webb.easywiring.common.util.Node;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.world.entity.player.Player;
+import org.lwjgl.system.CallbackI;
 
 public class IOverlayRenderable implements Comparable<IOverlayRenderable>
 {
-    Vector3f position;
-    double distanceToPlayer;
+    public Vector3f position;
+    public double distanceToPlayer = Double.POSITIVE_INFINITY;
 
-    public IOverlayRenderable (Vector3f position)
+    public IOverlayRenderable (Vector3f _position)
     {
-        position = position;
+        position = _position;
+        _updateDistance();
+    }
+    private void _updateDistance()
+    {
         Player player = Minecraft.getInstance().player;
         if (player != null)
         {
@@ -24,13 +29,13 @@ public class IOverlayRenderable implements Comparable<IOverlayRenderable>
 
     public void render(MultiBufferSource.BufferSource buffer, PoseStack mstack)
     {
-
+        _updateDistance();
     }
 
     @Override
     public int compareTo(IOverlayRenderable b)
     {
-        return this.distanceToPlayer < b.distanceToPlayer ? 1 : (this.distanceToPlayer > b.distanceToPlayer) ? -1 : 0;
+        return Double.compare(b.distanceToPlayer, this.distanceToPlayer);
     }
 
 }
