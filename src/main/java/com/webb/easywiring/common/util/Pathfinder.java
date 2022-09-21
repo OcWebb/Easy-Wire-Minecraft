@@ -15,7 +15,7 @@ public class Pathfinder
 
 		try
 		{
-			path = wirePathCalculator.CalculatePath(world, startBlock, destBlock, 3);
+			path = wirePathCalculator.CalculatePath(world, startBlock, destBlock, 8);
 		}
 		catch (Exception e)
 		{

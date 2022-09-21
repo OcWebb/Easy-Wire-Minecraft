@@ -66,7 +66,7 @@ public class DepthLineOverlayRenderable extends IOverlayRenderable
                         currentBlock, _node.directionToAir, lineWidth, crosslineWidth, red, green, blue);
 
                 mstack.pushPose();
-                mstack.mulPose(Vector3f.YP.rotationDegrees(90));
+//                mstack.mulPose(Vector3f.YP.rotationDegrees(90));
                 renderDepthLine(buffer, mstack,
                         currentBlock, _node.directionToAir, lineWidth, crosslineWidth, red, green, blue);
                 mstack.popPose();
@@ -100,8 +100,8 @@ public class DepthLineOverlayRenderable extends IOverlayRenderable
         builder.vertex(matrix, crosslineHalfWidth, 0.5F, 0).color(r, g, b, 1).uv2(LIGHT_FULLBRIGHT).endVertex();
 
         // bottom cross
-        builder.vertex(matrix, -crosslineHalfWidth, -0.5F, 0).color(r, g, b, 1).uv2(LIGHT_FULLBRIGHT).endVertex();
-        builder.vertex(matrix, crosslineHalfWidth, -0.5F, 0).color(r, g, b, 1).uv2(LIGHT_FULLBRIGHT).endVertex();
+//        builder.vertex(matrix, -crosslineHalfWidth, -0.5F, 0).color(r, g, b, 1).uv2(LIGHT_FULLBRIGHT).endVertex();
+//        builder.vertex(matrix, crosslineHalfWidth, -0.5F, 0).color(r, g, b, 1).uv2(LIGHT_FULLBRIGHT).endVertex();
 
         stack.popPose();
 
