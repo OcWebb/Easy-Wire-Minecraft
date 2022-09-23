@@ -3,9 +3,14 @@ package com.webb.easywiring.common.items;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.webb.easywiring.client.render.PipePlacerScreen;
 import com.webb.easywiring.common.util.Path;
 import com.webb.easywiring.common.util.Pathfinder;
 
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.world.SimpleMenuProvider;
+import net.minecraft.world.inventory.MerchantMenu;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
@@ -48,6 +53,14 @@ public class PipePlacer extends Item
 			machines.clear();
 			currentPath.clear();
 			System.out.println("machines cleared");
+		}
+		else
+		{
+			if (world.isClientSide)
+			{
+				Screen screen = new PipePlacerScreen();
+				Minecraft.getInstance().setScreen(screen);
+			}
 		}
 
 		return super.use(world, player, hand);
